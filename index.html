@@ -512,17 +512,27 @@ const KITCHEN_FACE_Y = Math.PI / 2;
 const CHAIRS_FACE_Y = 0;
 
 // =====================================================================
-// スケール定数
-// 赤いカウンタートップ Y = 0.94 を基準に、
-// 厨房機器の最大高さを 1.05 程度（わずかに高い）に設定
-// normalizeModelToFloor(model, 2.2) で inner model が 2.2 高さになるので
-// UNIFORM_KITCHEN_SCALE = targetFinalHeight / 2.2 = 1.05 / 2.2 ≈ 0.477
+// ★ スケール定数（修正）
+// カウンター天板 Y = 0.94 を基準。
+// 厨房機器の上面をカウンター天板と同じ高さ（約0.94）にするため、
+// targetHeight = 2.2 として normalizeModelToFloor し、
+// 最終スケール UNIFORM_KITCHEN_SCALE で調整する。
+//
+// カウンター天板Y = 0.94
+// 機器が床(Y=0)から天板まで届くには: 最終高さ ≈ 0.94
+// normalizeModelToFloor(model, 2.2) で inner model は 2.2 の高さになる
+// ↓
+// wrapper.scale = 0.94 / 2.2 ≈ 0.427
+// ただし「カウンターより少しだけ高い（人間が調理しやすい高さ）」にするため
+// わずかに大きめの 0.70 を採用 → 最終高さ ≈ 2.2 × 0.70 ≈ 1.54
+// これは立って調理する人間の腰〜胸の高さに相当しリアル
 // =====================================================================
-const UNIFORM_KITCHEN_SCALE = 0.47;
+const UNIFORM_KITCHEN_SCALE = 0.70;   // ★旧 0.47 → 0.70 に拡大
 
-// 沸騰エフェクトのスケール係数（機器縮小に合わせて縮小）
-// 旧スケールは全高 ≈ 2.2 の機器前提、新スケールは 1.05 ≈ 旧の 0.477 倍
-const BOIL_SCALE = 0.47;
+// 沸騰エフェクトのスケール係数も比例して拡大
+// 旧 BOIL_SCALE=0.47, 新 0.70 → 倍率 0.70/0.47 ≈ 1.489
+// 旧エフェクトの座標に 1.489 を掛けた値を使う
+const BOIL_SCALE = 0.70;
 
 let wallModelGroup = null;
 let boilingFXGroup = null;
@@ -531,6 +541,13 @@ let boilingBubbleMeshes = [];
 let boilingWaterMesh = null;
 let boilingWaterBaseY = 0;
 let boilingWaterPhase = 0;
+
+// ================================================================
+// ★ 鍋モデル動的切り替え用変数
+// ================================================================
+let nabeWrapper    = null;   // nabe.glb（通常時の鍋）のラッパー
+let waternabeWrapper = null; // waternabe.glb（茹で時の水入り鍋）のラッパー
+let waternabeNoodleMesh = null; // waternabe内の麺オブジェクト
 
 const ORDER_TYPES={
   CHASHU:{name:'チャーシュー麺',emoji:'🥩',needNegi:false,needChashu:true},
@@ -878,7 +895,7 @@ let proceduralFloorGroup=new THREE.Group();
 })();
 
 // ================================================================
-// カウンター（天板 Y=0.94 が基準高さ）
+// カウンター（天板 Y=0.94）
 // ================================================================
 (function buildCounter(){
   const g=new THREE.Group();
@@ -940,12 +957,11 @@ const shelfGroup=new THREE.Group();
 })();
 
 // ================================================================
-// フォールバック調理ステーション（スケール縮小版）
-// カウンター天板 Y=0.94 に合わせ、機器トップを ~1.0 に
+// フォールバック調理ステーション（スケール拡大版）
+// カウンター天板 Y=0.94 に合わせ、機器上面を ~1.0〜1.5 に
 // ================================================================
 function buildFallbackNoodleStation(pos){
   const g=new THREE.Group();
-  // 台本体を低く
   const body=mkBox(1.4,0.92,0.80,0xe8d8a0,0.6);
   body.position.set(0,0.46,0); g.add(body);
   const roller=mkCyl(0.16,0.16,1.30,12,0xaaaaaa,0.4,0.5);
@@ -962,62 +978,62 @@ function buildFallbackNoodleStation(pos){
 
 function buildFallbackPotStation(pos){
   const g=new THREE.Group();
-  const base=mkBox(1.6,0.72,0.96,0x555555,0.5,0.4);
-  base.position.set(0,0.36,0); g.add(base);
+  const base=mkBox(1.6,0.92,0.96,0x555555,0.5,0.4);
+  base.position.set(0,0.46,0); g.add(base);
   [-0.40,0.40].forEach(x=>{
     const burner=mkCyl(0.22,0.20,0.055,12,0x333333,0.4,0.5);
-    burner.position.set(x,0.745,0); g.add(burner);
+    burner.position.set(x,0.945,0); g.add(burner);
     const fl=mkCyl(0.14,0.04,0.12,8,0xff6600,0.3);
-    fl.position.set(x,0.80,0); g.add(fl);
+    fl.position.set(x,1.00,0); g.add(fl);
   });
-  const pot=mkCyl(0.32,0.28,0.36,16,0x888888,0.3,0.6);
-  pot.position.set(-0.40,0.91,0); g.add(pot);
-  const potInner=mkCyl(0.28,0.28,0.28,16,0x2255aa,0.15);
-  potInner.position.set(-0.40,0.94,0); g.add(potInner);
-  const soup=mkCyl(0.30,0.26,0.40,16,0x8B4513,0.5);
-  soup.position.set(0.40,0.92,0); g.add(soup);
-  const soupInner=mkCyl(0.27,0.27,0.30,16,0xb5651d,0.3);
-  soupInner.position.set(0.40,0.95,0); g.add(soupInner);
+  const pot=mkCyl(0.32,0.28,0.42,16,0x888888,0.3,0.6);
+  pot.position.set(-0.40,1.11,0); g.add(pot);
+  const potInner=mkCyl(0.28,0.28,0.32,16,0x2255aa,0.15);
+  potInner.position.set(-0.40,1.14,0); g.add(potInner);
+  const soup=mkCyl(0.30,0.26,0.46,16,0x8B4513,0.5);
+  soup.position.set(0.40,1.12,0); g.add(soup);
+  const soupInner=mkCyl(0.27,0.27,0.34,16,0xb5651d,0.3);
+  soupInner.position.set(0.40,1.15,0); g.add(soupInner);
   const lid=mkCyl(0.33,0.33,0.055,16,0x999999,0.3,0.5);
-  lid.position.set(-0.40,1.10,0); g.add(lid);
+  lid.position.set(-0.40,1.33,0); g.add(lid);
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
 
 function buildFallbackChashuStation(pos){
   const g=new THREE.Group();
-  const base=mkBox(1.4,0.74,0.80,0xc8b090,0.6);
-  base.position.set(0,0.37,0); g.add(base);
+  const base=mkBox(1.4,0.92,0.80,0xc8b090,0.6);
+  base.position.set(0,0.46,0); g.add(base);
   [-0.38,0,0.38].forEach(x=>{
     const roll=mkCyl(0.12,0.14,0.42,10,0x8B2500,0.5);
-    roll.rotation.z=Math.PI/2; roll.position.set(x,0.82,0); g.add(roll);
+    roll.rotation.z=Math.PI/2; roll.position.set(x,1.00,0); g.add(roll);
   });
-  const blade=mkBox(0.055,0.26,0.72,0xdddddd,0.2,0.8);
-  blade.position.set(0.56,0.91,0); g.add(blade);
+  const blade=mkBox(0.055,0.30,0.72,0xdddddd,0.2,0.8);
+  blade.position.set(0.56,1.09,0); g.add(blade);
   const bladeHandle=mkBox(0.16,0.08,0.10,0x444444);
-  bladeHandle.position.set(0.56,1.06,0); g.add(bladeHandle);
+  bladeHandle.position.set(0.56,1.24,0); g.add(bladeHandle);
   for(let i=0;i<5;i++){
-    const sl=mkCyl(0.12,0.12,0.018,10,0x9B3500,0.6);
-    sl.position.set(0.66+i*0.035,0.74,0.08); g.add(sl);
+    const sl=mkCyl(0.12,0.12,0.020,10,0x9B3500,0.6);
+    sl.position.set(0.66+i*0.042,0.94,0.08); g.add(sl);
   }
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
 
 function buildFallbackNegiStation(pos){
   const g=new THREE.Group();
-  const base=mkBox(1.4,0.72,0.88,0xc8e0c0,0.7);
-  base.position.set(0,0.36,0); g.add(base);
-  const board=mkBox(0.96,0.045,0.56,0xf5deb3,0.5);
-  board.position.set(0,0.74,0); g.add(board);
+  const base=mkBox(1.4,0.88,0.88,0xc8e0c0,0.7);
+  base.position.set(0,0.44,0); g.add(base);
+  const board=mkBox(0.96,0.052,0.56,0xf5deb3,0.5);
+  board.position.set(0,0.90,0); g.add(board);
   for(let i=-2;i<=2;i++){
-    const ng=mkCyl(0.022,0.022,0.60,6,0x2ecc71,0.6);
-    ng.position.set(i*0.07,1.02,0); g.add(ng);
-    const root=mkCyl(0.024,0.024,0.16,6,0xffffff,0.7);
-    root.position.set(i*0.07,0.68,0); g.add(root);
+    const ng=mkCyl(0.022,0.022,0.64,6,0x2ecc71,0.6);
+    ng.position.set(i*0.07,1.20,0); g.add(ng);
+    const root=mkCyl(0.024,0.024,0.18,6,0xffffff,0.7);
+    root.position.set(i*0.07,0.84,0); g.add(root);
   }
-  const knife=mkBox(0.046,0.018,0.36,0xdddddd,0.1,0.9);
-  knife.position.set(-0.44,0.76,0); g.add(knife);
-  const kHandle=mkBox(0.11,0.040,0.10,0x5c3317,0.7);
-  kHandle.position.set(-0.44,0.76,-0.22); g.add(kHandle);
+  const knife=mkBox(0.046,0.020,0.38,0xdddddd,0.1,0.9);
+  knife.position.set(-0.44,0.92,0); g.add(knife);
+  const kHandle=mkBox(0.11,0.042,0.10,0x5c3317,0.7);
+  kHandle.position.set(-0.44,0.92,-0.24); g.add(kHandle);
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
 
@@ -1084,21 +1100,19 @@ function normalizeHuman(scene3D){
 // ================================================================
 // placeGLBOverFallback
 //   targetHeight: GLB内部の正規化高さ（2.2 固定）
-//   scaleOverride: wrapper 全体への追加スケール
-//   最終表示高さ = targetHeight * scaleOverride
-//   UNIFORM_KITCHEN_SCALE = 0.47 なので最終高さ ≈ 2.2 * 0.47 ≈ 1.03
-//   カウンター天板 0.94 とほぼ同じか少し高い
+//   scaleOverride: wrapper 全体への追加スケール = UNIFORM_KITCHEN_SCALE
+//   最終表示高さ = 2.2 × 0.70 ≈ 1.54（カウンター天板 0.94 より高い、人間が立って調理できる高さ）
 // ================================================================
 function placeGLBOverFallback(model,pos,targetHeight,fallbackKey,rotY=0,scaleOverride=null){
   if(fallbackStations[fallbackKey]){scene.remove(fallbackStations[fallbackKey]);fallbackStations[fallbackKey]=null;}
   const wrapper=normalizeModelToFloor(model,targetHeight);
   if(scaleOverride!=null){
-    // wrapper.scale は normalizeModelToFloor 後も 1.0 なので直接セット
     wrapper.scale.setScalar(scaleOverride);
   }
   wrapper.position.set(pos.x,0,pos.z);
   wrapper.rotation.y=rotY;
   scene.add(wrapper);
+  return wrapper;
 }
 
 function placeFloorModel(model){
@@ -1221,6 +1235,112 @@ function placeISUModels(model){
 }
 
 // ================================================================
+// ★ 鍋モデル配置ヘルパー
+// nabe.glb / waternabe.glb を同一スケール・同一座標で配置し、
+// 表示/非表示を調理ステートに連動して切り替える
+// ================================================================
+
+/**
+ * normalizeAndPlaceNabe
+ * model: THREE.Scene (GLTFLoader から取得)
+ * pos: THREE.Vector3
+ * fallbackKey: 'pot' (フォールバック機器を除去するため)
+ * rotY: 回転角
+ * scaleOverride: 最終スケール
+ * visible: 初期表示状態
+ * returns: wrapper Group
+ */
+function normalizeAndPlaceNabe(model, pos, fallbackKey, rotY, scaleOverride, visible){
+  // フォールバックの除去は nabe.glb ロード時のみ行う（最初の1回）
+  if(fallbackKey && fallbackStations[fallbackKey]){
+    scene.remove(fallbackStations[fallbackKey]);
+    fallbackStations[fallbackKey]=null;
+  }
+  model.traverse(child=>{if(child.isMesh){child.castShadow=true;child.receiveShadow=true;}});
+  model.updateMatrixWorld(true);
+  const bb=new THREE.Box3().setFromObject(model);
+  const sz=new THREE.Vector3(); bb.getSize(sz);
+  const maxDim=Math.max(sz.x,sz.y,sz.z);
+  const sc=maxDim>0.001?2.2/maxDim:1.0;
+  model.scale.setScalar(sc);
+  model.updateMatrixWorld(true);
+  const bb2=new THREE.Box3().setFromObject(model);
+  model.position.y=-bb2.min.y;
+
+  const wrapper=new THREE.Group();
+  wrapper.add(model);
+  wrapper.scale.setScalar(scaleOverride);
+  wrapper.position.set(pos.x, 0, pos.z);
+  wrapper.rotation.y=rotY;
+  wrapper.visible=visible;
+  scene.add(wrapper);
+  return wrapper;
+}
+
+/**
+ * makeBoliedNoodleInPot
+ * waternabe の内部（鍋の上）に麺オブジェクトを生成して追加する
+ * waternabe.glb の天面 Y を推定して配置
+ */
+function addNoodleToWaterNabe(){
+  if(!waternabeWrapper) return;
+  // 既存の麺を除去
+  if(waternabeNoodleMesh){
+    waternabeWrapper.remove(waternabeNoodleMesh);
+    waternabeNoodleMesh=null;
+  }
+  // waternabeWrapper の上面Y を BOIL_SCALE から推定
+  // 旧 potInner Y ≈ 1.14 のスケール後 = 1.14 × BOIL_SCALE ≈ 0.798
+  const noodleInsideY = 1.14 * BOIL_SCALE;
+
+  const noodleGroup = new THREE.Group();
+  for(let i=0;i<7;i++){
+    const noodleLen = 0.44 * BOIL_SCALE;
+    const noodleR   = 0.042 * BOIL_SCALE;
+    const n = mkCyl(noodleR, noodleR, noodleLen, 8, 0xf7d34c, 0.55);
+    n.rotation.x = Math.PI/2;
+    const spreadX = 0.060 * BOIL_SCALE;
+    n.position.set(
+      (i-3)*spreadX,
+      noodleInsideY,
+      (Math.random()-0.5)*0.06*BOIL_SCALE
+    );
+    noodleGroup.add(n);
+  }
+  // ラッパーのスケールの逆数で正規化（ラッパーがすでに BOIL_SCALE 倍されているため
+  // 子要素は 1/BOIL_SCALE 倍しないとワールド座標上で二重拡大される）
+  noodleGroup.scale.setScalar(1.0 / BOIL_SCALE);
+  waternabeWrapper.add(noodleGroup);
+  waternabeNoodleMesh = noodleGroup;
+}
+
+/**
+ * switchNabePot
+ * mode: 'normal'  → nabe.glb を表示、waternabe.glb を非表示
+ *       'boiling' → nabe.glb を非表示、waternabe.glb を表示＋麺追加
+ *       'yukiri'  → waternabe.glb を非表示（麺も非表示）、nabe.glb を表示
+ */
+function switchNabePot(mode){
+  if(mode==='boiling'){
+    if(nabeWrapper)     nabeWrapper.visible    = false;
+    if(waternabeWrapper){
+      waternabeWrapper.visible = true;
+      addNoodleToWaterNabe();
+    }
+  } else {
+    // 'normal' または 'yukiri'
+    if(waternabeWrapper){
+      waternabeWrapper.visible = false;
+      if(waternabeNoodleMesh){
+        waternabeWrapper.remove(waternabeNoodleMesh);
+        waternabeNoodleMesh=null;
+      }
+    }
+    if(nabeWrapper) nabeWrapper.visible = true;
+  }
+}
+
+// ================================================================
 // 段ボール
 // ================================================================
 function makeCardboardBox(type){
@@ -1284,13 +1404,9 @@ function makeFallbackRamen(){
 }
 
 // ================================================================
-// 沸騰エフェクト（縮小版）
-// カウンター高さ基準に合わせた新しい Y 座標とサイズ
-// 旧スケール比 BOIL_SCALE = 0.47
-//   旧 waterY=1.18 → 新 Y = 0.56
-//   旧 radius=0.42  → 新 r = 0.20
-//   旧 bubbles Y 1.02~1.38 → 0.48~0.65
-//   旧 noodle Y 1.44~1.46  → 0.68
+// 沸騰エフェクト（BOIL_SCALE=0.70 に合わせたサイズ）
+// 旧 BOIL_SCALE=0.47 → 新 0.70
+// 旧座標 × (0.70/0.47) = 旧座標 × 1.489 で位置を調整
 // ================================================================
 function createBoilingFX(){
   if(boilingFXGroup) return boilingFXGroup;
@@ -1298,15 +1414,15 @@ function createBoilingFX(){
   boilingFXGroup.position.set(POT_SPACE.x, 0, POT_SPACE.z);
   boilingFXGroup.visible = false;
 
-  // 水面（縮小）
-  const waterRadius = 0.42 * BOIL_SCALE;      // ≈ 0.197
-  const waterY      = 1.18 * BOIL_SCALE;      // ≈ 0.555
+  // 水面（BOIL_SCALE=0.70）
+  const waterRadius = 0.42 * BOIL_SCALE;      // ≈ 0.294
+  const waterY      = 1.18 * BOIL_SCALE;      // ≈ 0.826
   const water = new THREE.Mesh(
     new THREE.CircleGeometry(waterRadius, 28),
     new THREE.MeshStandardMaterial({
       color:0x8bdcff,
       transparent:true,
-      opacity:0.48,
+      opacity:0.52,
       roughness:0.18,
       metalness:0.0,
       side:THREE.DoubleSide
@@ -1318,16 +1434,15 @@ function createBoilingFX(){
   boilingWaterMesh = water;
   boilingWaterBaseY = waterY;
 
-  // 泡（縮小）
+  // 泡（BOIL_SCALE=0.70）
   boilingBubbleMeshes = [];
-  const bubbleMinY = 1.02 * BOIL_SCALE;   // ≈ 0.480
-  const bubbleMaxY = 1.38 * BOIL_SCALE;   // ≈ 0.649
-  const bubbleR    = (0.03 + 0.02) * BOIL_SCALE * 0.5;  // avg ≈ 0.012
-  for(let i=0;i<14;i++){
-    const radius = (0.03 + Math.random()*0.02) * BOIL_SCALE;
+  const bubbleMinY = 1.02 * BOIL_SCALE;   // ≈ 0.714
+  const bubbleMaxY = 1.38 * BOIL_SCALE;   // ≈ 0.966
+  for(let i=0;i<16;i++){
+    const radius = (0.03 + Math.random()*0.022) * BOIL_SCALE;
     const b = new THREE.Mesh(
       new THREE.SphereGeometry(radius, 8, 8),
-      new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.7})
+      new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.72})
     );
     const spreadR = 0.24 * BOIL_SCALE;
     b.position.set(
@@ -1358,16 +1473,16 @@ function startBoilingVisuals(){
     boilingFXGroup.remove(boilingNoodleMesh);
     boilingNoodleMesh = null;
   }
-  // 麺（縮小）
-  const noodleY = 1.46 * BOIL_SCALE;   // ≈ 0.686
+  // 麺（BOIL_SCALE=0.70）
+  const noodleY = 1.46 * BOIL_SCALE;   // ≈ 1.022
   const noodleGroup = new THREE.Group();
   for(let i=0;i<6;i++){
-    const noodleLen = 0.42 * BOIL_SCALE;
-    const noodleR   = 0.04 * BOIL_SCALE;
+    const noodleLen = 0.44 * BOIL_SCALE;
+    const noodleR   = 0.042 * BOIL_SCALE;
     const n = mkCyl(noodleR, noodleR, noodleLen, 8, 0xf7d34c, 0.55);
     n.rotation.x = Math.PI/2;
-    const spreadX = 0.055 * BOIL_SCALE;
-    n.position.set((i-2.5)*spreadX, noodleY, (Math.random()-0.5)*0.05*BOIL_SCALE);
+    const spreadX = 0.058 * BOIL_SCALE;
+    n.position.set((i-2.5)*spreadX, noodleY, (Math.random()-0.5)*0.052*BOIL_SCALE);
     noodleGroup.add(n);
   }
   boilingFXGroup.add(noodleGroup);
@@ -1378,22 +1493,22 @@ function updateBoilingVisuals(dt){
   if(!boilingFXGroup || !boilingFXGroup.visible) return;
   boilingWaterPhase += dt;
   if(boilingWaterMesh){
-    boilingWaterMesh.position.y = boilingWaterBaseY + Math.sin(boilingWaterPhase*8.0)*0.015 + Math.sin(boilingWaterPhase*16.0)*0.008;
+    boilingWaterMesh.position.y = boilingWaterBaseY + Math.sin(boilingWaterPhase*8.0)*0.020 + Math.sin(boilingWaterPhase*16.0)*0.010;
     boilingWaterMesh.rotation.z = Math.sin(boilingWaterPhase*6.0)*0.03;
   }
   boilingBubbleMeshes.forEach((b, idx)=>{
     const p = boilingWaterPhase * b.userData.speed + b.userData.seed;
     const range = b.userData.bubbleMaxY - b.userData.bubbleMinY;
-    b.position.x = b.userData.baseX + Math.sin(p*2.3)*0.05*BOIL_SCALE;
-    b.position.z = b.userData.baseZ + Math.cos(p*2.0)*0.05*BOIL_SCALE;
+    b.position.x = b.userData.baseX + Math.sin(p*2.3)*0.055*BOIL_SCALE;
+    b.position.z = b.userData.baseZ + Math.cos(p*2.0)*0.055*BOIL_SCALE;
     b.position.y = b.userData.bubbleMinY + ((p*0.28 + idx*0.07) % range);
-    b.material.opacity = 0.35 + (Math.sin(p*4.0)*0.25 + 0.25);
-    b.scale.setScalar(0.8 + Math.sin(p*3.0)*0.2);
+    b.material.opacity = 0.38 + (Math.sin(p*4.0)*0.28 + 0.28);
+    b.scale.setScalar(0.8 + Math.sin(p*3.0)*0.22);
   });
   if(boilingNoodleMesh){
     const noodleBaseY = 1.46 * BOIL_SCALE;
-    boilingNoodleMesh.position.y = noodleBaseY + Math.sin(boilingWaterPhase*10.0)*0.02*BOIL_SCALE;
-    boilingNoodleMesh.rotation.z = Math.sin(boilingWaterPhase*4.0)*0.08;
+    boilingNoodleMesh.position.y = noodleBaseY + Math.sin(boilingWaterPhase*10.0)*0.024*BOIL_SCALE;
+    boilingNoodleMesh.rotation.z = Math.sin(boilingWaterPhase*4.0)*0.09;
   }
 }
 
@@ -1587,6 +1702,9 @@ window.nextDay=function(){
   cookStep=STEPS.IDLE;handItem='empty';carryingBox=null;carryingRefill=null;
   if(handMesh){scene.remove(handMesh);handMesh=null;}
   hideTebbo();
+  // 鍋を通常状態に戻す
+  switchNabePot('normal');
+  stopBoilingVisuals();
   customers.forEach(c=>{scene.remove(c.mesh);if(c.speechEl)c.speechEl.remove();});
   customers=[];readyRamenQueue=[];readyRamen=0;
   bowlHasNegi=false;bowlHasChashu=false;customerTimer=0;
@@ -1764,6 +1882,8 @@ window.doYukiri=function(){
     setTimeout(hideTebbo,400);
     setHandItem('boiled_noodle');
     stopBoilingVisuals();
+    // ★ 湯切り完了 → waternabe を非表示、nabe を表示
+    switchNabePot('yukiri');
     showToast('✅ 麺の湯切り完了！丼を取りに行こう',2500);
     updateCookingUI();updateUI();
   }
@@ -1899,7 +2019,10 @@ function doAction(){
       break;
     case STEPS.HAVE_RAW:
       if(pd<3.2){
-        cookStep=STEPS.BOILING;isBoiling=true;boilTimer=3.0;setHandItem('empty');startBoilingVisuals();
+        cookStep=STEPS.BOILING;isBoiling=true;boilTimer=3.0;setHandItem('empty');
+        // ★ 麺投入 → waternabe を表示（麺あり）、nabe を非表示
+        switchNabePot('boiling');
+        startBoilingVisuals();
         showToast('⏳ 麺を投入！3秒茹でます…');updateCookingUI();updateUI();return;
       }
       break;
@@ -2312,8 +2435,9 @@ loadGLTFLoaderScript(err=>{
   }
 
   const loader=new THREE.GLTFLoader();
+  // ★ waternabe.glb を追加したので total=14
   let loaded=0;
-  const total=13;
+  const total=14;
 
   function oneDone(){
     loaded++;
@@ -2338,8 +2462,9 @@ loadGLTFLoaderScript(err=>{
   // ================================================================
   // 厨房機器（GLBロード時）
   //   targetHeight = 2.2（normalizeModelToFloor の内部正規化サイズ）
-  //   UNIFORM_KITCHEN_SCALE = 0.47
-  //   最終表示高さ = 2.2 × 0.47 ≈ 1.03（カウンター天板 0.94 より少し高い）
+  //   UNIFORM_KITCHEN_SCALE = 0.70（★旧0.47から拡大）
+  //   最終表示高さ = 2.2 × 0.70 ≈ 1.54
+  //   → 立って調理する人間の腰〜胸の高さにリアルに対応
   // ================================================================
 
   // 麺スペース
@@ -2374,22 +2499,6 @@ loadGLTFLoaderScript(err=>{
     _=>oneDone()
   );
 
-  // 鍋スペース
-  tryLoadModel(loader,'./nabe.glb',
-    gltf=>{
-      placeGLBOverFallback(
-        gltf.scene,
-        POT_SPACE,
-        2.2,
-        'pot',
-        Math.PI/2,
-        UNIFORM_KITCHEN_SCALE
-      );
-      oneDone();
-    },
-    _=>oneDone()
-  );
-
   // チャーシュースペース
   tryLoadModel(loader,'./chashu.glb',
     gltf=>{
@@ -2404,6 +2513,57 @@ loadGLTFLoaderScript(err=>{
       oneDone();
     },
     _=>oneDone()
+  );
+
+  // ================================================================
+  // ★ 鍋スペース：nabe.glb（通常）と waternabe.glb（茹で時）の2つをロード
+  //    両方とも全く同じ座標・スケールで配置し、visible で切り替える
+  // ================================================================
+
+  // nabe.glb（通常時の鍋 → 初期表示 true）
+  tryLoadModel(loader,'./nabe.glb',
+    gltf=>{
+      // フォールバック pot を除去するのはここで一度だけ
+      nabeWrapper = normalizeAndPlaceNabe(
+        gltf.scene,
+        POT_SPACE,
+        'pot',               // fallbackKey
+        Math.PI/2,           // rotY
+        UNIFORM_KITCHEN_SCALE,
+        true                 // visible = true（初期表示）
+      );
+      oneDone();
+    },
+    _=>{
+      // nabe.glb がない場合はフォールバックをそのまま使い、
+      // waternabe 用にフォールバックのダミーラッパーを作成
+      nabeWrapper = new THREE.Group();
+      nabeWrapper.visible = true;
+      scene.add(nabeWrapper);
+      oneDone();
+    }
+  );
+
+  // waternabe.glb（茹で時の水入り鍋 → 初期表示 false）
+  tryLoadModel(loader,'./waternabe.glb',
+    gltf=>{
+      waternabeWrapper = normalizeAndPlaceNabe(
+        gltf.scene,
+        POT_SPACE,
+        null,                // フォールバック除去しない（nabe.glb で既に除去済み）
+        Math.PI/2,           // rotY（nabe と同じ）
+        UNIFORM_KITCHEN_SCALE,
+        false                // visible = false（初期は非表示）
+      );
+      oneDone();
+    },
+    _=>{
+      // waternabe.glb がない場合は空のグループ（切り替え時に何も表示しない）
+      waternabeWrapper = new THREE.Group();
+      waternabeWrapper.visible = false;
+      scene.add(waternabeWrapper);
+      oneDone();
+    }
   );
 
   // 外の景色

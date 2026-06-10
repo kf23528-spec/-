@@ -437,6 +437,7 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+
 "use strict";
 
 // ================================================================
@@ -586,15 +587,13 @@ function buildTebboFromModel(model){
 }
 
 function buildFallbackTebbo(){
-  // pol.glbが読めない場合：簡易テボを生成
+  // pol.glbが読めない場合：簡易テボを生成（黄色い麺は出さない）
   const g=new THREE.Group();
-  // 柄
   const handle=new THREE.Mesh(
     new THREE.CylinderGeometry(0.022,0.022,0.38,8),
     new THREE.MeshStandardMaterial({color:0x8B4513,roughness:0.7})
   );
   handle.position.set(0,0,0); g.add(handle);
-  // 網カップ（円筒）
   const cup=new THREE.Mesh(
     new THREE.CylinderGeometry(0.11,0.09,0.12,12,1,true),
     new THREE.MeshStandardMaterial({color:0xaaa,roughness:0.5,metalness:0.6,wireframe:true})
@@ -605,13 +604,6 @@ function buildFallbackTebbo(){
     new THREE.MeshStandardMaterial({color:0x888,roughness:0.5,metalness:0.6,wireframe:true})
   );
   cupBottom.rotation.x=-Math.PI/2; cupBottom.position.y=0.16; g.add(cupBottom);
-  // 麺（黄色の塊）
-  const noodle=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.085,0.085,0.04,12),
-    new THREE.MeshStandardMaterial({color:0xf7c840,roughness:0.6})
-  );
-  noodle.position.y=0.24; g.add(noodle);
-  // 湯気（小さなパーティクル代わりの半透明球）
   for(let i=0;i<4;i++){
     const steam=new THREE.Mesh(
       new THREE.SphereGeometry(0.018,6,6),
@@ -693,42 +685,31 @@ scene.fog=new THREE.Fog(0x87ceeb,28,65);
 // ================================================================
 // レイアウト定数
 // ================================================================
-//  プレイヤー初期位置: (0, 1.65, 0)  ← 厨房中央
-//  Z軸: - = 奥（カウンター方向）  / + = 手前（後ろ壁）
-//  X軸: - = 左 / + = 右
-//
-//  カウンター      : (0,  0, -4)
-//  客席・入口      : Z < -6
-//  麺スペース      : (-4, 0,  0) 左
-//  鍋スペース      : (-4, 0, -2) 左奥
-//  ネギスペース    : ( 4, 0,  0) 右
-//  チャーシュー    : ( 4, 0, -2) 右奥
-//  在庫棚          : (-6, 0,  5) 後壁際
-//  発注PC          : ( 6, 0,  5) 後壁際
-//  配達エリア      : ( 0, 0, -20) 店外
-// ================================================================
+// 参考画像に合わせた横長カウンター店舗
+// X軸に長い部屋 / Z軸は客席が手前、厨房が奥
 
-const ROOM_W=22, ROOM_D=24, WALL_H=4.2, WALL_T=0.22;
-const DOOR_W=2.6, DOOR_H=2.8;
+const ROOM_W=20, ROOM_D=20, WALL_H=4.2, WALL_T=0.22;
+const DOOR_W=2.8, DOOR_H=2.8;
 
-const PC_POS       =new THREE.Vector3( 6.0,0, 5.0);
-const COUNTER_POS  =new THREE.Vector3( 0.0,0,-4.0);
-const DELIVERY_POS =new THREE.Vector3( 0.0,0,-20.0);
-const SHELF_POS    =new THREE.Vector3(-6.0,0, 5.0);
+const PC_POS       =new THREE.Vector3( 6.0,0, 4.0);
+const COUNTER_POS  =new THREE.Vector3( 0.0,0,-1.0);
+const DELIVERY_POS =new THREE.Vector3( 0.0,0,-9.0);
+const SHELF_POS    =new THREE.Vector3(-6.0,0, 4.0);
 
-const NOODLE_SPACE =new THREE.Vector3(-4.0,0, 0.0);
-const POT_SPACE    =new THREE.Vector3(-4.0,0,-2.0);
-const NEGI_SPACE   =new THREE.Vector3( 4.0,0, 0.0);
-const CHASHU_SPACE =new THREE.Vector3( 4.0,0,-2.0);
+const NOODLE_SPACE =new THREE.Vector3(-1.5,0, 1.0);
+const POT_SPACE    =new THREE.Vector3(-4.0,0, 1.0);
+const NEGI_SPACE   =new THREE.Vector3( 1.5,0, 1.0);
+const CHASHU_SPACE =new THREE.Vector3( 4.0,0, 1.0);
 
-const PLAYER_START =new THREE.Vector3(0,1.65,0);
+const PLAYER_START =new THREE.Vector3(0,1.6,2.0);
 
-const SPAWN_Z=-24.0;
-const CUSTOMER_TZ=COUNTER_POS.z+1.4;
+const SPAWN_Z=-11.0;
+const CUSTOMER_TZ=-2.5;
+const SEAT_XS=[-4.5,-1.5,1.5,4.5];
 
 const BOUNDS={
-  xMin:-ROOM_W/2+0.6, xMax:ROOM_W/2-0.6,
-  zMin:-26.0,         zMax:ROOM_D/2+1.0
+  xMin:-ROOM_W/2+0.7, xMax:ROOM_W/2-0.7,
+  zMin:-ROOM_D/2+0.8, zMax:ROOM_D/2-0.8
 };
 
 let yaw=0.0, pitch=0.0;
@@ -791,53 +772,36 @@ let proceduralWallsGroup=new THREE.Group();
 let proceduralFloorGroup=new THREE.Group();
 
 (function buildRoom(){
-  // ── 床 ──
-  const floorMat=new THREE.MeshStandardMaterial({color:0x5a3d28,roughness:0.92});
-  // 厨房床
-  const kitchenFloor=new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W,ROOM_D/2+4),floorMat);
-  kitchenFloor.rotation.x=-Math.PI/2;
-  kitchenFloor.position.set(0,0,ROOM_D/4-2);
-  kitchenFloor.receiveShadow=true;
-  proceduralFloorGroup.add(kitchenFloor);
+  const floorMat=new THREE.MeshStandardMaterial({color:0x6a4b2e,roughness:0.95});
+  const roomFloor=new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W,ROOM_D),floorMat);
+  roomFloor.rotation.x=-Math.PI/2;
+  roomFloor.position.set(0,0,0);
+  roomFloor.receiveShadow=true;
+  proceduralFloorGroup.add(roomFloor);
 
-  // 客席床
-  const hallFloor=new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM_W,ROOM_D/2+2),
-    new THREE.MeshStandardMaterial({color:0x6e4e30,roughness:0.9})
-  );
-  hallFloor.rotation.x=-Math.PI/2;
-  hallFloor.position.set(0,0,-ROOM_D/4-1);
-  hallFloor.receiveShadow=true;
-  proceduralFloorGroup.add(hallFloor);
-
-  // 床タイル目地（厨房）
-  for(let i=-11;i<=11;i++){
-    const s=mkBox(0.04,0.003,ROOM_D+6,i%2===0?0x4a2e18:0x6b4830);
-    s.position.set(i*1.0,0.001,0);
-    proceduralFloorGroup.add(s);
+  for(let x=-10;x<=10;x++){
+    const line=mkBox(0.02,0.003,ROOM_D,0x8a6a48,0.9);
+    line.position.set(x,0.001,0);
+    proceduralFloorGroup.add(line);
+  }
+  for(let z=-10;z<=10;z++){
+    const line=mkBox(ROOM_W,0.003,0.02,0x8a6a48,0.9);
+    line.position.set(0,0.001,z);
+    proceduralFloorGroup.add(line);
   }
 
-  // 歩道（店外）
   const sideWalk=new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM_W+12,18),
+    new THREE.PlaneGeometry(ROOM_W+12,12),
     new THREE.MeshStandardMaterial({color:0x888898,roughness:0.95})
   );
   sideWalk.rotation.x=-Math.PI/2;
-  sideWalk.position.set(0,-0.005,-20);
+  sideWalk.position.set(0,-0.005,-11);
   sideWalk.receiveShadow=true;
   proceduralFloorGroup.add(sideWalk);
 
-  // 横断歩道ライン
-  for(let i=0;i<6;i++){
-    const s=mkBox(1.6,0.005,0.55,0xffffff,1);
-    s.position.set(-6+i*2.4,0.003,-26);
-    proceduralFloorGroup.add(s);
-  }
   scene.add(proceduralFloorGroup);
 
-  // ── 壁マテリアル ──
   const wm=mat(0xf2e0c4,0.95);
-  const wm2=mat(0xe8d4b0,0.95);
 
   function addWall(w,h,d,x,y,z,mat_=wm,rotY=0){
     const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat_);
@@ -850,23 +814,23 @@ let proceduralFloorGroup=new THREE.Group();
 
   const RW=ROOM_W/2, RD=ROOM_D/2;
 
-  // ── 後壁（プレイヤーの後ろ Z=+RD）──
-  addWall(ROOM_W,WALL_H,WALL_T,  0,WALL_H/2, RD);
+  addWall(ROOM_W,WALL_H,WALL_T, 0, WALL_H/2,  RD);
+  addWall(ROOM_W,WALL_H,WALL_T, 0, WALL_H/2, -RD);
+  addWall(WALL_T,WALL_H,ROOM_D, -RW, WALL_H/2, 0);
+  addWall(WALL_T,WALL_H,ROOM_D,  RW, WALL_H/2, 0);
 
-  // ── 左壁 ──
-  addWall(WALL_T,WALL_H,ROOM_D+8, -RW,WALL_H/2, 0);
-
-  // ── 右壁 ──
-  addWall(WALL_T,WALL_H,ROOM_D+8,  RW,WALL_H/2, 0);
-
-  // ── 正面壁（Z=-RD）入口あり ──
   const frontZ=-RD;
   const sw=(ROOM_W-DOOR_W)/2;
-  addWall(sw,    WALL_H, WALL_T, -RW+sw/2,  WALL_H/2,        frontZ, wm);
-  addWall(sw,    WALL_H, WALL_T,  RW-sw/2,  WALL_H/2,        frontZ, wm);
-  addWall(DOOR_W,WALL_H-DOOR_H,WALL_T, 0, DOOR_H+(WALL_H-DOOR_H)/2, frontZ, wm);
+  const leftDoorWall=mkBox(sw,WALL_H,WALL_T,0xf2e0c4,0.95);
+  leftDoorWall.position.set(-RW+sw/2,WALL_H/2,frontZ);
+  proceduralWallsGroup.add(leftDoorWall);
+  const rightDoorWall=mkBox(sw,WALL_H,WALL_T,0xf2e0c4,0.95);
+  rightDoorWall.position.set(RW-sw/2,WALL_H/2,frontZ);
+  proceduralWallsGroup.add(rightDoorWall);
+  const topDoorWall=mkBox(DOOR_W,WALL_H-DOOR_H,WALL_T,0xf2e0c4,0.95);
+  topDoorWall.position.set(0,DOOR_H+(WALL_H-DOOR_H)/2,frontZ);
+  proceduralWallsGroup.add(topDoorWall);
 
-  // ドア枠
   const fm=mat(0x6b3c0e,0.7);
   const fL=new THREE.Mesh(new THREE.BoxGeometry(0.14,DOOR_H,0.28),fm);
   fL.position.set(-DOOR_W/2,DOOR_H/2,frontZ); proceduralWallsGroup.add(fL);
@@ -874,28 +838,21 @@ let proceduralFloorGroup=new THREE.Group();
   const fT=new THREE.Mesh(new THREE.BoxGeometry(DOOR_W+0.28,0.16,0.28),fm);
   fT.position.set(0,DOOR_H,frontZ); proceduralWallsGroup.add(fT);
 
-  // 暖簾
   [0xd63031,0xffffff,0xd63031].forEach((c,i)=>{
     const n=mkBox(0.74,1.0,0.030,c);
     n.position.set((i-1)*0.78,1.90,frontZ-0.08);
     proceduralWallsGroup.add(n);
   });
 
-  // 看板（後壁）
   const sign=mkBox(4.6,0.76,0.16,0x8B0000);
   sign.position.set(0,WALL_H-0.48,RD-0.12); proceduralWallsGroup.add(sign);
   const signL=mkBox(4.1,0.52,0.026,0xffd700,0.28);
   signL.position.set(0,WALL_H-0.48,RD-0.03); proceduralWallsGroup.add(signL);
 
-  // 天井
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W,ROOM_D),mat(0xf0ece0,1));
   ceil.rotation.x=Math.PI/2; ceil.position.set(0,WALL_H,0);
   proceduralWallsGroup.add(ceil);
 
-  // 厨房・客席仕切り壁（低い）
-  addWall(ROOM_W,1.1,WALL_T, 0,0.55,-2.6, wm2);
-
-  // 行灯（両壁）
   [[-RW+0.16,2.6,0],[RW-0.16,2.6,0]].forEach(([x,y,z])=>{
     const ng=new THREE.Group();
     [0xd63031,0xffffff,0xd63031].forEach((c,i)=>{
@@ -904,19 +861,6 @@ let proceduralFloorGroup=new THREE.Group();
     ng.position.set(x,y,z); proceduralWallsGroup.add(ng);
   });
 
-  // ゾーンラベルパネル
-  const zones=[
-    {x:-4,z:0.0,col:0x1565c0,label:'①麺'},
-    {x:-4,z:-2.0,col:0xcc5500,label:'②鍋'},
-    {x:4,z:0.0,col:0x8B0000,label:'③ネギ'},
-    {x:4,z:-2.0,col:0x1b5e20,label:'④チャー'},
-  ];
-  zones.forEach(z=>{
-    const bg=mkBox(1.1,0.3,0.08,z.col,0.6);
-    bg.position.set(z.x,2.5,z.z-0.5); proceduralWallsGroup.add(bg);
-  });
-
-  // 配達エリアマーカー
   const da=new THREE.Mesh(
     new THREE.PlaneGeometry(3.8,3.8),
     new THREE.MeshStandardMaterial({color:0xf5c842,roughness:1,transparent:true,opacity:0.52})
@@ -932,17 +876,15 @@ let proceduralFloorGroup=new THREE.Group();
 // ================================================================
 (function buildCounter(){
   const g=new THREE.Group();
-  const top=mkBox(5.4,0.14,1.1,0xc0392b);
+  const top=mkBox(11.2,0.14,1.0,0xc0392b);
   top.position.y=0.94; g.add(top);
-  const front=mkBox(5.4,0.94,0.10,0x96281b);
-  front.position.set(0,0.47,0.50); g.add(front);
-  [[-2.55,0.47],[2.55,0.47]].forEach(([x])=>{
-    const leg=mkBox(0.12,0.94,1.0,0x7b241c); leg.position.set(x,0.47,0); g.add(leg);
+  const front=mkBox(11.2,0.94,0.10,0x96281b);
+  front.position.set(0,0.47,0.48); g.add(front);
+  [[-5.35,0.47],[5.35,0.47]].forEach(([x])=>{
+    const leg=mkBox(0.14,0.94,0.92,0x7b241c); leg.position.set(x,0.47,0); g.add(leg);
   });
-  const reg=mkBox(0.42,0.38,0.34,0xeee,0.45);
-  reg.position.set(-2.4,1.12,0.05); g.add(reg);
-  const edge=mkBox(5.6,0.06,0.06,0x888,0.3,0.5);
-  edge.position.set(0,1.01,0.54); g.add(edge);
+  const edge=mkBox(11.3,0.06,0.06,0x888,0.3,0.5);
+  edge.position.set(0,1.01,0.50); g.add(edge);
   g.position.copy(COUNTER_POS); scene.add(g);
 })();
 
@@ -965,7 +907,7 @@ let proceduralFloorGroup=new THREE.Group();
   const mouse=mkBox(0.10,0.024,0.14,0x555);
   mouse.position.set(0.44,0.89,0.12); g.add(mouse);
   g.position.copy(PC_POS);
-  g.rotation.y=Math.PI; // プレイヤーに向ける
+  g.rotation.y=Math.PI;
   scene.add(g);
 })();
 
@@ -1080,7 +1022,9 @@ function buildFallbackChair(x,z){
   se.position.y=0.49; g.add(se);
   const bk=mkBox(0.44,0.52,0.07,0x4a2800);
   bk.position.set(0,0.78,0.19); g.add(bk);
-  g.position.set(x,0,z); scene.add(g); return g;
+  g.position.set(x,0,z);
+  g.rotation.y=Math.PI;
+  scene.add(g); return g;
 }
 
 // ================================================================
@@ -1094,8 +1038,8 @@ function buildFallbackStations(){
   fallbackStations.pot   =buildFallbackPotStation(POT_SPACE);
   fallbackStations.chashu=buildFallbackChashuStation(CHASHU_SPACE);
   fallbackStations.negi  =buildFallbackNegiStation(NEGI_SPACE);
-  [-2.2,0.0,2.2,4.4].forEach(x=>{
-    chairMeshes.push(buildFallbackChair(x+COUNTER_POS.x,COUNTER_POS.z+2.0));
+  SEAT_XS.forEach(x=>{
+    chairMeshes.push(buildFallbackChair(x,CUSTOMER_TZ));
   });
 }
 
@@ -1144,36 +1088,30 @@ function placeGLBOverFallback(model,pos,targetHeight,fallbackKey,rotY=0){
 // ── floor.glb：プロシージャル床を置換 ──
 function placeFloorModel(model){
   scene.remove(proceduralFloorGroup);
-  proceduralFloorGroup=new THREE.Group(); // 空にする
+  proceduralFloorGroup=new THREE.Group();
   model.traverse(c=>{if(c.isMesh){c.receiveShadow=true;}});
   model.updateMatrixWorld(true);
   const bb=new THREE.Box3().setFromObject(model);
   const sz=new THREE.Vector3(); bb.getSize(sz);
-  const maxD=Math.max(sz.x,sz.z);
-  const sc=maxD>0.001?(ROOM_W*1.8)/maxD:1.0;
-  model.scale.setScalar(sc);
+  const maxXZ=Math.max(sz.x,sz.z);
+  const sc=maxXZ>0.001?Math.min(ROOM_W/maxXZ,ROOM_D/maxXZ):1.0;
+  model.scale.setScalar(sc*0.98);
   model.updateMatrixWorld(true);
   const bb2=new THREE.Box3().setFromObject(model);
   model.position.y=-bb2.min.y;
   const wrapper=new THREE.Group();
   wrapper.add(model);
-  wrapper.position.set(0,0,0);
   scene.add(wrapper);
 
-  // 歩道・配達マーカーは再追加
   const sideWalk=new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM_W+12,18),
+    new THREE.PlaneGeometry(ROOM_W+12,12),
     new THREE.MeshStandardMaterial({color:0x888898,roughness:0.95})
   );
   sideWalk.rotation.x=-Math.PI/2;
-  sideWalk.position.set(0,-0.005,-20);
+  sideWalk.position.set(0,-0.005,-11);
   sideWalk.receiveShadow=true;
   scene.add(sideWalk);
-  for(let i=0;i<6;i++){
-    const s=mkBox(1.6,0.005,0.55,0xffffff,1);
-    s.position.set(-6+i*2.4,0.003,-26);
-    scene.add(s);
-  }
+
   const da=new THREE.Mesh(
     new THREE.PlaneGeometry(3.8,3.8),
     new THREE.MeshStandardMaterial({color:0xf5c842,roughness:1,transparent:true,opacity:0.52})
@@ -1185,53 +1123,45 @@ function placeFloorModel(model){
 
 // ── wall.glb：4面分を敷き詰め（プロシージャル壁と併用） ──
 function placeWallModels(model){
-  // wall.glbを4辺 + 適切な回転で配置
-  // モデルの寸法を計測
+  scene.remove(proceduralWallsGroup);
   model.updateMatrixWorld(true);
   const bb=new THREE.Box3().setFromObject(model);
   const sz=new THREE.Vector3(); bb.getSize(sz);
-  // 壁1枚の幅を約2mとみなし、ROOM_W / 2m 枚並べる
-  const wallUnitWidth=sz.x>0.01?sz.x:2.0;
-  const wallUnitHeight=sz.y>0.01?sz.y:WALL_H;
-  const scaleY=WALL_H/wallUnitHeight;
+  const unitW=Math.max(1.2, sz.x || 1.2);
+  const unitH=Math.max(1.0, sz.y || 1.0);
+  const scale=WALL_H/unitH;
+  const pieceW=unitW*scale;
+  const RW=ROOM_W/2, RD=ROOM_D/2;
 
-  function placeWallRow(numPieces,startX,startZ,rotY,spacing){
-    for(let i=0;i<numPieces;i++){
-      const clone=model.clone();
-      clone.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
-      clone.scale.set(scaleY,scaleY,scaleY);
-      clone.updateMatrixWorld(true);
-      const bb2=new THREE.Box3().setFromObject(clone);
-      clone.position.y=-bb2.min.y;
-      const wrapper=new THREE.Group();
-      wrapper.add(clone);
-      wrapper.position.set(
-        startX+Math.sin(rotY)*spacing*i,
-        0,
-        startZ+Math.cos(rotY)*spacing*i
-      );
-      wrapper.rotation.y=rotY;
-      scene.add(wrapper);
-    }
+  function addPiece(x,z,rotY){
+    const clone=model.clone();
+    clone.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
+    clone.scale.setScalar(scale);
+    clone.updateMatrixWorld(true);
+    const bb2=new THREE.Box3().setFromObject(clone);
+    clone.position.y=-bb2.min.y;
+    const wrapper=new THREE.Group();
+    wrapper.add(clone);
+    wrapper.position.set(x,0,z);
+    wrapper.rotation.y=rotY;
+    scene.add(wrapper);
   }
 
-  const unitW=wallUnitWidth*scaleY;
-  const RW=ROOM_W/2, RD=ROOM_D/2;
-  const nSide=Math.ceil(ROOM_D/unitW)+2;
-  const nFront=Math.ceil(ROOM_W/unitW)+2;
+  const countX=Math.ceil(ROOM_W/pieceW)+1;
+  const countZ=Math.ceil(ROOM_D/pieceW)+1;
 
-  // 後壁（Z=+RD）
-  placeWallRow(nFront,-RW,   RD,   0,       unitW);
-  // 左壁（X=-RW）
-  placeWallRow(nSide, -RW,   -RD,  Math.PI/2, unitW);
-  // 右壁（X=+RW）
-  placeWallRow(nSide,  RW,   -RD, -Math.PI/2, unitW);
-  // 正面壁（Z=-RD）左右2本（ドア分は空き）
-  const doorHalf=DOOR_W/2;
-  const leftPieces=Math.ceil((RW-doorHalf)/unitW)+1;
-  const rightPieces=Math.ceil((RW-doorHalf)/unitW)+1;
-  placeWallRow(leftPieces, -RW,   -RD, Math.PI,  unitW);
-  placeWallRow(rightPieces, doorHalf, -RD, Math.PI, unitW);
+  for(let i=0;i<countX;i++){
+    const x=-RW+i*pieceW;
+    addPiece(x,RD,0);
+    if(Math.abs(x) > DOOR_W/2 + pieceW*0.6 || i===0 || i===countX-1){
+      addPiece(x,-RD,Math.PI);
+    }
+  }
+  for(let i=0;i<countZ;i++){
+    const z=-RD+i*pieceW;
+    addPiece(-RW,z,Math.PI/2);
+    addPiece(RW,z,-Math.PI/2);
+  }
 }
 
 // ── soto.glb：入口の外に大きな背景として配置 ──
@@ -1248,14 +1178,14 @@ function placeSotoModel(model){
   model.position.y=-bb2.min.y;
   const wrapper=new THREE.Group();
   wrapper.add(model);
-  wrapper.position.set(0,0,-ROOM_D/2-14);
+  wrapper.position.set(0,0,-ROOM_D/2-8);
   scene.add(wrapper);
 }
 
 // ── isu.glb：カウンター前に一列 ──
 function placeISUModels(model){
   chairMeshes.forEach(c=>scene.remove(c)); chairMeshes=[];
-  [-3.3,-1.1,1.1,3.3].forEach(xOff=>{
+  SEAT_XS.forEach((xOff)=>{
     const clone=model.clone();
     clone.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
     clone.updateMatrixWorld(true);
@@ -1265,7 +1195,7 @@ function placeISUModels(model){
     clone.scale.setScalar(sc);
     clone.updateMatrixWorld(true);
     const bb2=new THREE.Box3().setFromObject(clone);
-    clone.position.set(xOff+COUNTER_POS.x,-bb2.min.y,COUNTER_POS.z+2.1);
+    clone.position.set(xOff,-bb2.min.y,CUSTOMER_TZ);
     clone.rotation.y=Math.PI;
     scene.add(clone);
     chairMeshes.push(clone);
@@ -1346,7 +1276,7 @@ function makeHandMesh(type){
     case 'refill_chashu': return mkCyl(0.14,0.14,0.10,10,0x8B2500,0.5);
     case 'refill_soup':   return mkCyl(0.10,0.10,0.27,10,0xff8c00,0.4,0.3);
     case 'raw_noodle':{const g=new THREE.Group();[-1,0,1].forEach(i=>{const n=mkCyl(0.09,0.09,0.06,10,0xf5d060);n.rotation.z=Math.PI/2;n.position.set(i*0.20,0,0);g.add(n);});return g;}
-    case 'boiled_noodle': return mkCyl(0.19,0.19,0.07,12,0xf7c84a);
+    case 'boiled_noodle': return new THREE.Group(); // 湯切り中は黄色い麺オブジェクトを出さない
     case 'bowl_empty':    return mkCyl(0.22,0.17,0.14,16,0xf5f5dc);
     case 'bowl_soup':{const g=new THREE.Group();g.add(mkCyl(0.22,0.17,0.14,16,0xf5f5dc));const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.012,16),mat(0xb05020,0.8));s.position.y=0.065;g.add(s);return g;}
     case 'bowl_soup_noodle':{
@@ -1386,9 +1316,9 @@ function makeHandRamen(){
 function setHandItem(type){
   if(handMesh){scene.remove(handMesh);handMesh=null;}
   handItem=type;
-  if(type==='empty') return;
+  if(type==='empty' || type==='boiled_noodle') return;
   handMesh=makeHandMesh(type);
-  scene.add(handMesh);
+  if(handMesh) scene.add(handMesh);
 }
 
 // ================================================================
@@ -1406,7 +1336,7 @@ function spawnCustomer(){
   if(customers.length>=MAX_CUSTOMERS||!dayActive) return;
   const id=customerIdCounter++;
   const slot=customers.length;
-  const targetX=COUNTER_POS.x+(slot-1)*2.0;
+  const targetX=SEAT_XS[slot%SEAT_XS.length];
 
   let mesh;
   if(humanTemplates[id%3]) mesh=humanTemplates[id%3].clone();
@@ -1415,7 +1345,7 @@ function spawnCustomer(){
   mesh.updateMatrixWorld(true);
   const bb=new THREE.Box3().setFromObject(mesh);
   const groundOffset=-bb.min.y;
-  mesh.position.set(targetX*0.1,groundOffset,SPAWN_Z);
+  mesh.position.set(-ROOM_W*0.38,groundOffset,SPAWN_Z);
   mesh.rotation.y=0;
   scene.add(mesh);
 
@@ -1678,15 +1608,15 @@ window.closeOrderModal=closeOrderModal;
 // ================================================================
 window.doYukiri=function(){
   if(cookStep!==STEPS.YUKIRI_WAIT) return;
+  if(handMesh){ scene.remove(handMesh); handMesh=null; }
+  handItem='empty';
   yukiriLeft--;
   document.getElementById('yukiri-count').textContent=yukiriLeft;
-  // テボ3Dアニメを起動
   triggerYukiriAnim();
   showToast('シャッシャッ！',600);
   if(yukiriLeft<=0){
     cookStep=STEPS.NOODLE_READY;yukiriLeft=3;
     document.getElementById('yukiri-btn').style.display='none';
-    // テボを隠す
     setTimeout(hideTebbo,400);
     setHandItem('boiled_noodle');
     showToast('✅ 麺の湯切り完了！丼を取りに行こう',2500);
@@ -2158,7 +2088,7 @@ function animate(ts){
       c.mesh.rotation.y=Math.atan2(dx,dz)+Math.PI;
     } else {
       c.mesh.position.set(c.targetX,c.groundOffset,c.targetZ);
-      c.mesh.rotation.y=Math.PI;
+      c.mesh.rotation.y=Math.PI; // カウンター側へ向ける
       c.state='waiting';
       if(c.speechEl) c.speechEl.textContent=`${c.orderType.emoji} ${c.orderType.name}をください！`;
     }
@@ -2266,25 +2196,25 @@ loadGLTFLoaderScript(err=>{
 
   // 麺スペース (左 X=-4, Z=0)
   tryLoadModel(loader,'./men.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,NOODLE_SPACE,2.2,'noodle',Math.PI/2);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,NOODLE_SPACE,2.2,'noodle',0);oneDone();},
     _=>oneDone()
   );
 
   // ネギスペース (右 X=4, Z=0)
   tryLoadModel(loader,'./negi.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,NEGI_SPACE,2.0,'negi',-Math.PI/2);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,NEGI_SPACE,2.0,'negi',0);oneDone();},
     _=>oneDone()
   );
 
   // 鍋スペース (左奥 X=-4, Z=-2)
   tryLoadModel(loader,'./nabe.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,POT_SPACE,2.2,'pot',Math.PI/2);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,POT_SPACE,2.2,'pot',0);oneDone();},
     _=>oneDone()
   );
 
   // チャーシュー (右奥 X=4, Z=-2)
   tryLoadModel(loader,'./chashu.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,CHASHU_SPACE,2.0,'chashu',-Math.PI/2);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,CHASHU_SPACE,2.0,'chashu',0);oneDone();},
     _=>oneDone()
   );
 
@@ -2332,6 +2262,7 @@ loadGLTFLoaderScript(err=>{
     }
   );
 });
+
 </script>
 </body>
 </html>

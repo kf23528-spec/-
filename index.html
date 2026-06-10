@@ -691,10 +691,10 @@ scene.fog=new THREE.Fog(0x87ceeb,28,65);
 const ROOM_W=20, ROOM_D=20, WALL_H=4.2, WALL_T=0.22;
 const DOOR_W=2.8, DOOR_H=2.8;
 
-const PC_POS       =new THREE.Vector3( 6.0,0, 4.0);
+const PC_POS       =new THREE.Vector3( 6.0,0, 5.0);
 const COUNTER_POS  =new THREE.Vector3( 0.0,0,-1.0);
 const DELIVERY_POS =new THREE.Vector3( 0.0,0,-9.0);
-const SHELF_POS    =new THREE.Vector3(-6.0,0, 4.0);
+const SHELF_POS    =new THREE.Vector3(-6.0,0, 5.0);
 
 const NOODLE_SPACE =new THREE.Vector3(-1.5,0, 1.0);
 const POT_SPACE    =new THREE.Vector3(-4.0,0, 1.0);
@@ -1638,7 +1638,7 @@ function doAction(){
   const paidC=customers.find(c=>c.coinMesh&&c.state==='paid');
   if(paidC){
     const ctD=flat.distanceTo(new THREE.Vector3(COUNTER_POS.x,0,COUNTER_POS.z));
-    if(ctD<3.5){
+    if(ctD<4.0){
       money+=ramenPrice;daySales+=ramenPrice;customersServed++;dayCustomers++;
       scene.remove(paidC.coinMesh);paidC.coinMesh=null;
       showToast(`💰 +$${ramenPrice} ありがとう！`);
@@ -1648,12 +1648,12 @@ function doAction(){
 
   // [B] PC発注
   const pcD=flat.distanceTo(new THREE.Vector3(PC_POS.x,0,PC_POS.z));
-  if(pcD<3.2){openOrderModal();return;}
+  if(pcD<4.0){openOrderModal();return;}
 
   // [C] 段ボールを手に取る
   if(!carryingBox&&!carryingRefill&&cookStep===STEPS.IDLE&&handItem==='empty'){
     const delivD=flat.distanceTo(new THREE.Vector3(DELIVERY_POS.x,0,DELIVERY_POS.z));
-    if(delivD<3.8&&deliveryBoxes.length>0){
+    if(delivD<4.0&&deliveryBoxes.length>0){
       const box=deliveryBoxes[deliveryBoxes.length-1];
       carryingBox=box;
       scene.remove(box.mesh);
@@ -1666,7 +1666,7 @@ function doAction(){
 
   // [D] 棚へ段ボールを収納
   const shelfD=flat.distanceTo(new THREE.Vector3(SHELF_POS.x,0,SHELF_POS.z));
-  if(carryingBox&&shelfD<3.2){
+  if(carryingBox&&shelfD<3.5){
     const type=carryingBox.type;
     shelfStock[type]++;
     carryingBox=null;setHandItem('empty');
@@ -1676,7 +1676,7 @@ function doAction(){
 
   // [E] 棚から補充食材を取り出す
   if(!carryingBox&&!carryingRefill&&cookStep===STEPS.IDLE&&handItem==='empty'){
-    if(shelfD<3.2){
+    if(shelfD<3.5){
       const candidates=['men','negi','chashu','soup'].filter(t=>shelfStock[t]>0);
       if(candidates.length===0){showToast('⚠️ 棚に在庫がありません！PCで発注してください',2500);return;}
       let chosen=null,minStock=Infinity;
@@ -1695,14 +1695,14 @@ function doAction(){
     const type=carryingRefill.type;
     const targetPos=type==='men'?NOODLE_SPACE:type==='soup'?POT_SPACE:type==='chashu'?CHASHU_SPACE:NEGI_SPACE;
     const d=flat.distanceTo(new THREE.Vector3(targetPos.x,0,targetPos.z));
-    if(d<3.2){
+    if(d<3.6){
       stock[type]+=SHELF_TO_TABLE[type];
       carryingRefill=null;setHandItem('empty');
       showToast(`✅ ${refillLabel(type)}調理台に${SHELF_TO_TABLE[type]}回分チャージ完了！`,2500);
       updateUI();return;
     }
     const allSpaces=[NOODLE_SPACE,POT_SPACE,CHASHU_SPACE,NEGI_SPACE];
-    if(allSpaces.some(sp=>flat.distanceTo(new THREE.Vector3(sp.x,0,sp.z))<3.0)){
+    if(allSpaces.some(sp=>flat.distanceTo(new THREE.Vector3(sp.x,0,sp.z))<3.2)){
       showToast(`⚠️ ${refillLabel(type)}は別の調理台に補充してください`,2000);return;
     }
   }
@@ -1722,7 +1722,7 @@ function doAction(){
         stock.men--;cookStep=STEPS.HAVE_RAW;setHandItem('raw_noodle');
         showToast('🍜 生麺を掴んだ！②鍋スペースへ');updateUI();return;
       }
-      if(readyRamen>0&&ctD2<3.5){
+      if(readyRamen>0&&ctD2<4.0){
         const wc=customers.find(c=>c.state==='waiting');
         if(wc&&readyRamenQueue.length>0){
           const nextRamen=readyRamenQueue[0];
@@ -1767,7 +1767,7 @@ function doAction(){
       }
       break;
     case STEPS.NOODLE_READY:
-      if(ctD2<3.5){cookStep=STEPS.HAVE_BOWL;setHandItem('bowl_empty');showToast('🥣 空の丼を取った！②鍋スペースへ');updateUI();return;}
+      if(ctD2<4.0){cookStep=STEPS.HAVE_BOWL;setHandItem('bowl_empty');showToast('🥣 空の丼を取った！②鍋スペースへ');updateUI();return;}
       break;
     case STEPS.HAVE_BOWL:
       if(pd<3.2){
@@ -1800,27 +1800,27 @@ function doAction(){
         else{cookStep=STEPS.BOWL_CHASHU;setHandItem('bowl_chashu');showToast('🥩 チャーシュー乗せ完了！ネギ or カウンターへ');}
         updateUI();return;
       }
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('⚠️ トッピングなしで完成？注文を確認して！');updateUI();return;}
+      if(ctD2<4.0){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('⚠️ トッピングなしで完成？注文を確認して！');updateUI();return;}
       break;
     case STEPS.BOWL_NEGI:
       if(cd<3.0&&!bowlHasChashu){
         if(stock.chashu<=0){showToast('⚠️ チャーシューの残り0！棚から補充してください',2000);return;}
         stock.chashu--;bowlHasChashu=true;cookStep=STEPS.BOWL_BOTH;setHandItem('bowl_both');showToast('🌿🥩 全部乗せ完成！カウンターへ');updateUI();return;
       }
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ ラーメン完成！カウンターをタップ');updateUI();return;}
+      if(ctD2<4.0){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ ラーメン完成！カウンターをタップ');updateUI();return;}
       break;
     case STEPS.BOWL_CHASHU:
       if(gd<3.0&&!bowlHasNegi){
         if(stock.negi<=0){showToast('⚠️ ネギの残り0！棚から補充してください',2000);return;}
         stock.negi--;bowlHasNegi=true;cookStep=STEPS.BOWL_BOTH;setHandItem('bowl_both');showToast('🌿🥩 全部乗せ完成！カウンターへ');updateUI();return;
       }
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ ラーメン完成！カウンターをタップ');updateUI();return;}
+      if(ctD2<4.0){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ ラーメン完成！カウンターをタップ');updateUI();return;}
       break;
     case STEPS.BOWL_BOTH:
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ 特製ラーメン完成！カウンターをタップ');updateUI();return;}
+      if(ctD2<4.0){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ 特製ラーメン完成！カウンターをタップ');updateUI();return;}
       break;
     case STEPS.RAMEN_COMPLETE:
-      if(ctD2<3.5){
+      if(ctD2<4.0){
         readyRamen++;readyRamenQueue.push({hasNegi:bowlHasNegi,hasChashu:bowlHasChashu});
         cookStep=STEPS.IDLE;bowlHasNegi=false;bowlHasChashu=false;setHandItem('empty');
         showToast('🍜 ラーメンをカウンターに置いた！提供準備完了');updateUI();return;
@@ -1850,45 +1850,45 @@ function updateActionPrompt(){
   const hasPaid=customers.some(c=>c.coinMesh&&c.state==='paid');
 
   let msg=null;
-  if(hasPaid&&ctD<3.5)         msg=`💰 タップ → お金を受け取る(+$${ramenPrice})`;
-  else if(pcD<3.2)              msg='🖥️ タップ → 仕入れ＆価格設定を開く';
+  if(hasPaid&&ctD<4.0)         msg=`💰 タップ → お金を受け取る(+$${ramenPrice})`;
+  else if(pcD<4.0)              msg='🖥️ タップ → 仕入れ＆価格設定を開く';
   else if(carryingBox){
-    if(shD<3.2)                 msg='📦 タップ → 棚に収納する';
+    if(shD<3.5)                 msg='📦 タップ → 棚に収納する';
   } else if(carryingRefill){
     const type=carryingRefill.type;
     const tp=type==='men'?NOODLE_SPACE:type==='soup'?POT_SPACE:type==='chashu'?CHASHU_SPACE:NEGI_SPACE;
     const d=flat.distanceTo(new THREE.Vector3(tp.x,0,tp.z));
-    if(d<3.2)                   msg=`🔄 タップ → ${refillLabel(type)}調理台にチャージ`;
-  } else if(deliveryBoxes.length>0&&dvD<3.8&&cookStep===STEPS.IDLE&&handItem==='empty'){
+    if(d<3.6)                   msg=`🔄 タップ → ${refillLabel(type)}調理台にチャージ`;
+  } else if(deliveryBoxes.length>0&&dvD<4.0&&cookStep===STEPS.IDLE&&handItem==='empty'){
     msg='📦 タップ → 段ボールを持つ';
-  } else if(shD<3.2&&cookStep===STEPS.IDLE&&handItem==='empty'){
+  } else if(shD<3.5&&cookStep===STEPS.IDLE&&handItem==='empty'){
     msg=Object.values(shelfStock).some(v=>v>0)?'🏪 タップ → 補充食材を取り出す':'📦 棚が空。PCで発注しよう';
   } else {
     switch(cookStep){
       case STEPS.IDLE:
         if(nd<3.0) msg=stock.men>0?'🍜 タップ → 生麺を掴む':'⚠️ 麺の調理台残り0！棚から補充を';
-        else if(readyRamen>0&&ctD<3.5) msg='🍜 タップ → ラーメンを提供';
+        else if(readyRamen>0&&ctD<4.0) msg='🍜 タップ → ラーメンを提供';
         break;
       case STEPS.HAVE_RAW:    if(pd<3.2) msg='🫕 タップ → 麺を鍋に投入';break;
       case STEPS.BOILED_WAIT: if(pd<3.2) msg='🥢 タップ → 麺を上げる';break;
-      case STEPS.NOODLE_READY:if(ctD<3.5) msg='🥣 タップ → 空の丼を取る';break;
+      case STEPS.NOODLE_READY:if(ctD<4.0) msg='🥣 タップ → 空の丼を取る';break;
       case STEPS.HAVE_BOWL:   if(pd<3.2) msg=stock.soup>0?'🍵 タップ → スープを注ぐ':'⚠️ スープ残り0！棚から補充を';break;
       case STEPS.BOWL_SOUP:   if(pd<3.2) msg='🍜 タップ → 麺を投入';break;
       case STEPS.BOWL_NOODLE:
         if(gd<3.0)   msg=stock.negi>0?'🌿 タップ → ネギを乗せる':'⚠️ ネギ残り0';
         else if(cd<3.0) msg=stock.chashu>0?'🥩 タップ → チャーシューを乗せる':'⚠️ チャーシュー残り0';
-        else if(ctD<3.5) msg='↩ タップ → カウンターへ（トッピングなしラーメン）';
+        else if(ctD<4.0) msg='↩ タップ → カウンターへ（トッピングなしラーメン）';
         break;
       case STEPS.BOWL_NEGI:
         if(cd<3.0) msg=stock.chashu>0?'🥩 タップ → チャーシューを乗せる':'⚠️ チャーシュー残り0';
-        else if(ctD<3.5) msg='✅ タップ → カウンターに置く';
+        else if(ctD<4.0) msg='✅ タップ → カウンターに置く';
         break;
       case STEPS.BOWL_CHASHU:
         if(gd<3.0) msg=stock.negi>0?'🌿 タップ → ネギを乗せる':'⚠️ ネギ残り0';
-        else if(ctD<3.5) msg='✅ タップ → カウンターに置く';
+        else if(ctD<4.0) msg='✅ タップ → カウンターに置く';
         break;
       case STEPS.BOWL_BOTH:
-      case STEPS.RAMEN_COMPLETE: if(ctD<3.5) msg='✅ タップ → カウンターに置く';break;
+      case STEPS.RAMEN_COMPLETE: if(ctD<4.0) msg='✅ タップ → カウンターに置く';break;
     }
   }
   if(msg){el.textContent=msg;el.style.display='block';}
@@ -2196,25 +2196,25 @@ loadGLTFLoaderScript(err=>{
 
   // 麺スペース (左 X=-4, Z=0)
   tryLoadModel(loader,'./men.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,NOODLE_SPACE,2.2,'noodle',0);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,NOODLE_SPACE,2.2,'noodle',Math.PI/2);oneDone();},
     _=>oneDone()
   );
 
   // ネギスペース (右 X=4, Z=0)
   tryLoadModel(loader,'./negi.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,NEGI_SPACE,2.0,'negi',0);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,NEGI_SPACE,2.2,'negi',Math.PI/2);oneDone();},
     _=>oneDone()
   );
 
   // 鍋スペース (左奥 X=-4, Z=-2)
   tryLoadModel(loader,'./nabe.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,POT_SPACE,2.2,'pot',0);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,POT_SPACE,2.2,'pot',Math.PI/2);oneDone();},
     _=>oneDone()
   );
 
   // チャーシュー (右奥 X=4, Z=-2)
   tryLoadModel(loader,'./chashu.glb',
-    gltf=>{placeGLBOverFallback(gltf.scene,CHASHU_SPACE,2.0,'chashu',0);oneDone();},
+    gltf=>{placeGLBOverFallback(gltf.scene,CHASHU_SPACE,2.2,'chashu',Math.PI/2);oneDone();},
     _=>oneDone()
   );
 

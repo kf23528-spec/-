@@ -120,6 +120,19 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
 }
 #yukiri-btn:active{transform:translateX(-50%) scale(0.93);}
 
+/* チャーハン調理ボタン */
+#chahanbtn{
+  position:fixed;bottom:234px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#e67e22,#f39c12);
+  border:none;border-radius:16px;padding:14px 36px;
+  color:#fff;font-size:16px;font-weight:900;
+  z-index:200;display:none;cursor:pointer;
+  box-shadow:0 4px 18px rgba(243,156,18,0.5);
+  user-select:none;-webkit-user-select:none;
+  white-space:nowrap;
+}
+#chahanbtn:active{transform:translateX(-50%) scale(0.93);}
+
 #order-modal{
   display:none;position:fixed;top:0;left:0;width:100%;height:100%;
   background:rgba(0,0,0,0.88);z-index:200;
@@ -128,7 +141,7 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
 #order-modal.active{display:flex;}
 #order-panel{
   background:#1a2636;border:2px solid #4af;border-radius:18px;
-  padding:22px 22px;width:min(460px,96vw);color:#fff;text-align:center;
+  padding:22px 22px;width:min(480px,96vw);color:#fff;text-align:center;
   max-height:92vh;overflow-y:auto;
 }
 #order-panel h2{color:#4af;font-size:19px;margin-bottom:4px;}
@@ -139,6 +152,8 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
   padding:10px 13px;margin-bottom:8px;
   border:1px solid rgba(255,255,255,0.1);
 }
+.order-item.investment{border-color:rgba(255,200,50,0.4);background:rgba(255,200,50,0.06);}
+.order-item.investment.unlocked{border-color:rgba(100,255,100,0.4);background:rgba(100,255,100,0.05);}
 .order-item .iname{font-size:14px;font-weight:600;text-align:left;}
 .order-item .idesc{color:#aaa;font-size:11px;margin-top:2px;text-align:left;}
 .order-item .iprice{color:#f5c842;font-size:13px;margin-top:2px;text-align:left;}
@@ -150,6 +165,13 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
 }
 .order-btn-buy:active{background:#1555cc;}
 .order-btn-buy:disabled{background:#555;cursor:not-allowed;}
+.order-btn-invest{
+  background:linear-gradient(135deg,#b8860b,#daa520);color:#000;border:none;border-radius:8px;
+  padding:9px 14px;font-size:13px;font-weight:900;cursor:pointer;
+  white-space:nowrap;min-width:64px;
+}
+.order-btn-invest:active{background:#996600;}
+.order-btn-invest:disabled{background:#555;color:#aaa;cursor:not-allowed;}
 #close-order{
   margin-top:12px;background:#555;color:#fff;border:none;
   border-radius:10px;padding:10px 30px;font-size:15px;
@@ -189,6 +211,12 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
   margin-top:8px;font-size:13px;font-weight:700;
   padding:5px 12px;border-radius:8px;
 }
+
+.invest-section{
+  background:rgba(184,134,11,0.10);border:1.5px solid #daa520;
+  border-radius:12px;padding:12px 16px;margin-bottom:14px;
+}
+.invest-section h3{color:#daa520;font-size:14px;font-weight:700;margin-bottom:8px;}
 
 #delivery-notice{
   position:fixed;top:60px;left:50%;transform:translateX(-50%);
@@ -322,6 +350,7 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
 <div id="action-prompt">タップして操作</div>
 <div id="cooking-ui"></div>
 <button id="yukiri-btn" onclick="doYukiri()">💦 湯切り！（あと<span id="yukiri-count">3</span>回）</button>
+<button id="chahanbtn" onclick="doChahanStep()">🍳 炒める！（あと<span id="chahan-count">5</span>回）</button>
 <div id="toast"></div>
 <div id="delivery-notice">📦 配達エリアに段ボールが届いた！</div>
 
@@ -346,6 +375,33 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
       <div id="price-demand-label" style="color:#88ff88;background:rgba(100,255,100,0.1);">📊 通常の客足</div>
     </div>
 
+    <!-- 投資メニュー -->
+    <div class="invest-section">
+      <h3>🌟 新メニュー開発（投資）</h3>
+      <div class="order-item investment" id="recipe-item">
+        <div>
+          <div class="iname">📖 極上チャーハン レシピ解放</div>
+          <div class="idesc">新メニュー「極上チャーハン」の調理が可能になる</div>
+          <div class="iprice" style="color:#daa520;">$200</div>
+          <div class="istock" id="recipe-status" style="color:#aaa;">未解放</div>
+        </div>
+        <button class="order-btn-invest" id="recipe-btn" onclick="buyRecipe()">$200</button>
+      </div>
+      <div class="order-item investment" id="chahata-item">
+        <div>
+          <div class="iname">🍳 炒飯用調理台（Chahata）</div>
+          <div class="idesc">厨房にチャーハン専用台が設置される</div>
+          <div class="iprice" style="color:#daa520;">$500</div>
+          <div class="istock" id="chahata-status" style="color:#aaa;">未購入</div>
+        </div>
+        <button class="order-btn-invest" id="chahata-btn" onclick="buyChahataTai()">$500</button>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin-top:6px;text-align:left;">
+        ※ 両方揃えるとお客さんが「極上チャーハン」を注文（売上：<span style="color:#ffd700;">$45固定</span>）
+      </div>
+    </div>
+
+    <!-- 通常仕入れ -->
     <div class="order-item">
       <div>
         <div class="iname">🍜 麺（1ケース）</div>
@@ -415,7 +471,7 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
       <span class="value yellow" id="res-customers">0人</span>
     </div>
     <div class="result-row">
-      <span class="label">🍜 販売価格</span>
+      <span class="label">🍜 ラーメン販売価格</span>
       <span class="value yellow" id="res-price">$30</span>
     </div>
     <div class="result-row">
@@ -447,6 +503,24 @@ let gameRunning     = true;
 let customersServed = 0;
 let orderModalOpen  = false;
 let ramenPrice      = 30;
+
+// ── 極上チャーハンシステム ──
+let chahanRecipeUnlocked = false;  // レシピ解放フラグ
+let chahataTaiPlaced     = false;  // 調理台設置フラグ
+let chahanEnabled        = false;  // 両方揃ったら true
+const CHAHAN_PRICE       = 45;     // 固定売上
+
+// チャーハン調理ステート
+const CHAHAN_STEPS = {
+  IDLE:0, COOKING:1, COMPLETE:2
+};
+let chahanStep    = CHAHAN_STEPS.IDLE;
+let chahanLeft    = 5;   // 炒め回数
+let chahanMesh    = null;
+
+// Chahata.glb のワールド座標（チャーシュー台の隣）
+const CHAHATA_POS = new THREE.Vector3(5.8, 0, 1.0);
+let chahataTaiWrapper = null;
 
 function getCustomerInterval(){
   if(ramenPrice<=25)  return 4000+Math.random()*1500;
@@ -505,33 +579,87 @@ const MAX_CUSTOMERS=3;
 let ramenTemplate=null;
 let humanTemplates=[];
 
-// レイアウト補助
-const CHAIR_Z = -2.5;
-const CUSTOMER_SLOTS = [-4.6, -1.55, 1.55, 4.6];
-const KITCHEN_FACE_Y = Math.PI / 2;
+// ──────────────────────────────────────────────
+// ★ レイアウト定数（縮小版）
+//   ROOM_W/D: 20→12  ≒ 6割に縮小
+// ──────────────────────────────────────────────
+const ROOM_W=12, ROOM_D=12, WALL_H=3.8, WALL_T=0.20;
+const DOOR_W=2.2, DOOR_H=2.6;
+
+// 各スペースもコンパクトに再配置
+const PC_POS       = new THREE.Vector3( 3.8, 0,  3.6);
+const COUNTER_POS  = new THREE.Vector3( 0.0, 0, -0.6);
+const DELIVERY_POS = new THREE.Vector3( 0.0, 0, -5.8);
+const SHELF_POS    = new THREE.Vector3(-4.0, 0,  3.6);
+
+const NOODLE_SPACE = new THREE.Vector3(-1.2, 0,  0.8);
+const POT_SPACE    = new THREE.Vector3(-3.0, 0,  0.8);
+const NEGI_SPACE   = new THREE.Vector3( 1.2, 0,  0.8);
+const CHASHU_SPACE = new THREE.Vector3( 3.0, 0,  0.8);
+
+const PLAYER_START = new THREE.Vector3(0, 1.6, 2.0);
+
+const SPAWN_Z=-7.0;
+const CUSTOMER_TZ=-1.8;
+const SEAT_XS=[-3.0,-1.0,1.0,3.0];
+
+const BOUNDS={
+  xMin:-ROOM_W/2+0.55, xMax:ROOM_W/2-0.55,
+  zMin:-ROOM_D/2+0.6,  zMax:ROOM_D/2-0.6
+};
+
+const CHAIR_Z = -1.8;
 const CHAIRS_FACE_Y = 0;
 
-// =====================================================================
-// ★ スケール定数（修正）
-// カウンター天板 Y = 0.94 を基準。
-// 厨房機器の上面をカウンター天板と同じ高さ（約0.94）にするため、
-// targetHeight = 2.2 として normalizeModelToFloor し、
-// 最終スケール UNIFORM_KITCHEN_SCALE で調整する。
-//
-// カウンター天板Y = 0.94
-// 機器が床(Y=0)から天板まで届くには: 最終高さ ≈ 0.94
-// normalizeModelToFloor(model, 2.2) で inner model は 2.2 の高さになる
-// ↓
-// wrapper.scale = 0.94 / 2.2 ≈ 0.427
-// ただし「カウンターより少しだけ高い（人間が調理しやすい高さ）」にするため
-// わずかに大きめの 0.70 を採用 → 最終高さ ≈ 2.2 × 0.70 ≈ 1.54
-// これは立って調理する人間の腰〜胸の高さに相当しリアル
-// =====================================================================
-const UNIFORM_KITCHEN_SCALE = 0.70;   // ★旧 0.47 → 0.70 に拡大
+let yaw=0.0, pitch=0.0;
 
-// 沸騰エフェクトのスケール係数も比例して拡大
-// 旧 BOIL_SCALE=0.47, 新 0.70 → 倍率 0.70/0.47 ≈ 1.489
-// 旧エフェクトの座標に 1.489 を掛けた値を使う
+// ================================================================
+// Camera & Player
+// ================================================================
+const canvas=document.getElementById('canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.setClearColor(0x87ceeb);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.0;
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x87ceeb,18,42);
+
+const camera=new THREE.PerspectiveCamera(68,window.innerWidth/window.innerHeight,0.05,60);
+const playerPos=PLAYER_START.clone();
+camera.position.copy(playerPos);
+
+// ================================================================
+// ライティング
+// ================================================================
+scene.add(new THREE.AmbientLight(0xfff8e7,0.80));
+
+const sun=new THREE.DirectionalLight(0xfff5e0,1.1);
+sun.position.set(4,12,3);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-18;sun.shadow.camera.right=18;
+sun.shadow.camera.top=18;sun.shadow.camera.bottom=-18;
+sun.shadow.camera.far=50;
+scene.add(sun);
+
+[[-3,3.0,3],[3,3.0,3],[0,3.0,0],[-2.5,3.0,-1.5],[2.5,3.0,-1.5],[0,3.0,-3]].forEach(([x,y,z])=>{
+  const pl=new THREE.PointLight(0xffe8c0,0.60,10);
+  pl.position.set(x,y,z); scene.add(pl);
+});
+[[-2.0,3.0,-4.5],[2.0,3.0,-4.5]].forEach(([x,y,z])=>{
+  const pl=new THREE.PointLight(0xfff3d0,0.50,8);
+  pl.position.set(x,y,z); scene.add(pl);
+});
+
+// ================================================================
+// スケール定数
+// ================================================================
+const UNIFORM_KITCHEN_SCALE = 0.70;
 const BOIL_SCALE = 0.70;
 
 let wallModelGroup = null;
@@ -542,19 +670,17 @@ let boilingWaterMesh = null;
 let boilingWaterBaseY = 0;
 let boilingWaterPhase = 0;
 
-// ================================================================
-// ★ 鍋モデル動的切り替え用変数
-// ================================================================
-let nabeWrapper    = null;   // nabe.glb（通常時の鍋）のラッパー
-let waternabeWrapper = null; // waternabe.glb（茹で時の水入り鍋）のラッパー
-let waternabeNoodleMesh = null; // waternabe内の麺オブジェクト
+let nabeWrapper    = null;
+let waternabeWrapper = null;
+let waternabeNoodleMesh = null;
 
 const ORDER_TYPES={
-  CHASHU:{name:'チャーシュー麺',emoji:'🥩',needNegi:false,needChashu:true},
-  NEGI:{name:'ネギラーメン',emoji:'🌿',needNegi:true,needChashu:false},
-  SPECIAL:{name:'特製ラーメン',emoji:'⭐',needNegi:true,needChashu:true},
+  CHASHU:{name:'チャーシュー麺',emoji:'🥩',needNegi:false,needChashu:true,isChahan:false},
+  NEGI:  {name:'ネギラーメン',  emoji:'🌿',needNegi:true, needChashu:false,isChahan:false},
+  SPECIAL:{name:'特製ラーメン', emoji:'⭐',needNegi:true, needChashu:true, isChahan:false},
+  CHAHAN:{name:'極上チャーハン',emoji:'🍳',needNegi:false,needChashu:false,isChahan:true},
 };
-const ORDER_KEYS=Object.keys(ORDER_TYPES);
+const RAMEN_ORDER_KEYS=['CHASHU','NEGI','SPECIAL'];
 
 // ================================================================
 // 調理ステートマシン
@@ -577,203 +703,7 @@ let readyRamen=0;
 let readyRamenQueue=[];
 
 // ================================================================
-// テボ（pol.glb）湯切りシステム
-// ================================================================
-let polGlbModel=null;
-let tebboPivot=null;
-let tebboVisible=false;
-
-let yukiriAnim={
-  active:false,
-  t:0,
-  totalDuration:0.28,
-  baseY:0,
-  amp:0.26,
-};
-
-function showTebbo(){
-  if(!tebboVisible){
-    if(tebboPivot){ tebboPivot.visible=true; }
-    tebboVisible=true;
-  }
-}
-function hideTebbo(){
-  if(tebboVisible){
-    if(tebboPivot){ tebboPivot.visible=false; }
-    tebboVisible=false;
-  }
-  yukiriAnim.active=false;
-}
-
-function triggerYukiriAnim(){
-  if(!tebboPivot) return;
-  yukiriAnim.active=true;
-  yukiriAnim.t=0;
-}
-
-function buildTebboFromModel(model){
-  const wrapper=new THREE.Group();
-  const bb=new THREE.Box3().setFromObject(model);
-  const sz=new THREE.Vector3(); bb.getSize(sz);
-  const maxD=Math.max(sz.x,sz.y,sz.z);
-  const sc=maxD>0.001?0.32/maxD:1.0;
-  model.scale.setScalar(sc);
-  model.updateMatrixWorld(true);
-  const bb2=new THREE.Box3().setFromObject(model);
-  model.position.y=-bb2.min.y;
-  model.traverse(c=>{if(c.isMesh){c.castShadow=true;}});
-  wrapper.add(model);
-  return wrapper;
-}
-
-function buildFallbackTebbo(){
-  const g=new THREE.Group();
-  const handle=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.022,0.022,0.38,8),
-    new THREE.MeshStandardMaterial({color:0x8B4513,roughness:0.7})
-  );
-  handle.position.set(0,0,0); g.add(handle);
-  const cup=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.11,0.09,0.12,12,1,true),
-    new THREE.MeshStandardMaterial({color:0xaaaaaa,roughness:0.5,metalness:0.6,wireframe:true})
-  );
-  cup.position.y=0.22; g.add(cup);
-  const cupBottom=new THREE.Mesh(
-    new THREE.CircleGeometry(0.09,12),
-    new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5,metalness:0.6,wireframe:true})
-  );
-  cupBottom.rotation.x=-Math.PI/2; cupBottom.position.y=0.16; g.add(cupBottom);
-  for(let i=0;i<4;i++){
-    const steam=new THREE.Mesh(
-      new THREE.SphereGeometry(0.018,6,6),
-      new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.28})
-    );
-    steam.position.set(
-      (Math.random()-0.5)*0.12,
-      0.34+i*0.04,
-      (Math.random()-0.5)*0.12
-    );
-    g.add(steam);
-  }
-  return g;
-}
-
-function setupTebboPivot(model){
-  if(tebboPivot){ scene.remove(tebboPivot); tebboPivot=null; }
-  tebboPivot=new THREE.Group();
-  tebboPivot.visible=false;
-  const tebboMesh = model ? buildTebboFromModel(model) : buildFallbackTebbo();
-  tebboMesh.rotation.x = -0.38;
-  tebboMesh.rotation.z =  0.22;
-  tebboPivot.add(tebboMesh);
-  scene.add(tebboPivot);
-}
-
-function updateTebboPosition(dt){
-  if(!tebboPivot||!tebboVisible) return;
-  const f=getCamFwd();
-  const r=getCamRight();
-  tebboPivot.position.set(
-    playerPos.x + f.x*0.55 + r.x*0.36,
-    playerPos.y - 0.60 + Math.sin(pitch)*0.1,
-    playerPos.z + f.z*0.55 + r.z*0.36
-  );
-  tebboPivot.rotation.y = yaw + 0.5;
-
-  if(yukiriAnim.active){
-    yukiriAnim.t+=dt;
-    const progress=yukiriAnim.t/yukiriAnim.totalDuration;
-    if(progress>=1.0){
-      yukiriAnim.active=false;
-      yukiriAnim.t=0;
-      tebboPivot.position.y=playerPos.y-0.60+Math.sin(pitch)*0.1;
-    } else {
-      const shake=Math.sin(progress*Math.PI*3)*yukiriAnim.amp*(1-progress*0.4);
-      tebboPivot.position.y += shake;
-      const wobble=Math.sin(progress*Math.PI*6)*0.04;
-      tebboPivot.position.x += wobble * f.x;
-      tebboPivot.position.z += wobble * f.z;
-    }
-  }
-}
-
-// ================================================================
-// Three.js セットアップ
-// ================================================================
-const canvas=document.getElementById('canvas');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.setClearColor(0x87ceeb);
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.0;
-
-const scene=new THREE.Scene();
-scene.fog=new THREE.Fog(0x87ceeb,28,65);
-
-// ================================================================
-// レイアウト定数
-// ================================================================
-const ROOM_W=20, ROOM_D=20, WALL_H=4.2, WALL_T=0.22;
-const DOOR_W=2.8, DOOR_H=2.8;
-
-const PC_POS       =new THREE.Vector3( 6.0,0, 5.0);
-const COUNTER_POS  =new THREE.Vector3( 0.0,0,-1.0);
-const DELIVERY_POS =new THREE.Vector3( 0.0,0,-9.0);
-const SHELF_POS    =new THREE.Vector3(-6.0,0, 5.0);
-
-const NOODLE_SPACE =new THREE.Vector3(-1.5,0, 1.0);
-const POT_SPACE    =new THREE.Vector3(-4.0,0, 1.0);
-const NEGI_SPACE   =new THREE.Vector3( 1.5,0, 1.0);
-const CHASHU_SPACE =new THREE.Vector3( 4.0,0, 1.0);
-
-const PLAYER_START =new THREE.Vector3(0,1.6,2.0);
-
-const SPAWN_Z=-11.0;
-const CUSTOMER_TZ=-2.5;
-const SEAT_XS=[-4.5,-1.5,1.5,4.5];
-
-const BOUNDS={
-  xMin:-ROOM_W/2+0.7, xMax:ROOM_W/2-0.7,
-  zMin:-ROOM_D/2+0.8, zMax:ROOM_D/2-0.8
-};
-
-let yaw=0.0, pitch=0.0;
-
-// ================================================================
-// Camera & Player
-// ================================================================
-const camera=new THREE.PerspectiveCamera(68,window.innerWidth/window.innerHeight,0.05,80);
-camera.position.copy(PLAYER_START);
-const playerPos=PLAYER_START.clone();
-
-// ================================================================
-// ライティング
-// ================================================================
-scene.add(new THREE.AmbientLight(0xfff8e7,0.80));
-
-const sun=new THREE.DirectionalLight(0xfff5e0,1.1);
-sun.position.set(6,16,4);
-sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.left=-30;sun.shadow.camera.right=30;
-sun.shadow.camera.top=30;sun.shadow.camera.bottom=-30;
-sun.shadow.camera.far=80;
-scene.add(sun);
-
-[[-5,3.5,4],[5,3.5,4],[0,3.5,0],[-4,3.5,-2],[4,3.5,-2],[0,3.5,-5]].forEach(([x,y,z])=>{
-  const pl=new THREE.PointLight(0xffe8c0,0.65,15);
-  pl.position.set(x,y,z); scene.add(pl);
-});
-[[-3.5,3.5,-7],[3.5,3.5,-7]].forEach(([x,y,z])=>{
-  const pl=new THREE.PointLight(0xfff3d0,0.55,12);
-  pl.position.set(x,y,z); scene.add(pl);
-});
-
-// ================================================================
-// ヘルパー
+// ヘルパー関数
 // ================================================================
 function mat(color,rough=0.85,metal=0){
   return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
@@ -792,7 +722,7 @@ function mkSph(r,seg,color,rough=0.85){
 }
 
 // ================================================================
-// 部屋構築
+// 部屋構築（縮小版）
 // ================================================================
 let proceduralWallsGroup=new THREE.Group();
 let proceduralFloorGroup=new THREE.Group();
@@ -805,33 +735,32 @@ let proceduralFloorGroup=new THREE.Group();
   roomFloor.receiveShadow=true;
   proceduralFloorGroup.add(roomFloor);
 
-  for(let x=-10;x<=10;x++){
-    const line=mkBox(0.02,0.003,ROOM_D,0x8a6a48,0.9);
+  for(let x=-6;x<=6;x++){
+    const line=mkBox(0.018,0.003,ROOM_D,0x8a6a48,0.9);
     line.position.set(x,0.001,0);
     proceduralFloorGroup.add(line);
   }
-  for(let z=-10;z<=10;z++){
-    const line=mkBox(ROOM_W,0.003,0.02,0x8a6a48,0.9);
+  for(let z=-6;z<=6;z++){
+    const line=mkBox(ROOM_W,0.003,0.018,0x8a6a48,0.9);
     line.position.set(0,0.001,z);
     proceduralFloorGroup.add(line);
   }
 
   const sideWalk=new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM_W+12,12),
+    new THREE.PlaneGeometry(ROOM_W+8,8),
     new THREE.MeshStandardMaterial({color:0x888898,roughness:0.95})
   );
   sideWalk.rotation.x=-Math.PI/2;
-  sideWalk.position.set(0,-0.005,-11);
+  sideWalk.position.set(0,-0.005,-7);
   sideWalk.receiveShadow=true;
   proceduralFloorGroup.add(sideWalk);
   scene.add(proceduralFloorGroup);
 
   const wm=mat(0xf2e0c4,0.95);
-  function addWall(w,h,d,x,y,z,mat_=wm,rotY=0){
+  function addWall(w,h,d,x,y,z,mat_=wm){
     const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat_);
     m.position.set(x,y,z);
-    if(rotY) m.rotation.y=rotY;
-    m.receiveShadow=true; m.castShadow=true;
+    m.receiveShadow=true;m.castShadow=true;
     proceduralWallsGroup.add(m);
     return m;
   }
@@ -855,37 +784,37 @@ let proceduralFloorGroup=new THREE.Group();
   proceduralWallsGroup.add(topDoorWall);
 
   const fm=mat(0x6b3c0e,0.7);
-  const fL=new THREE.Mesh(new THREE.BoxGeometry(0.14,DOOR_H,0.28),fm);
+  const fL=new THREE.Mesh(new THREE.BoxGeometry(0.12,DOOR_H,0.22),fm);
   fL.position.set(-DOOR_W/2,DOOR_H/2,frontZ); proceduralWallsGroup.add(fL);
   const fR=fL.clone(); fR.position.set(DOOR_W/2,DOOR_H/2,frontZ); proceduralWallsGroup.add(fR);
-  const fT=new THREE.Mesh(new THREE.BoxGeometry(DOOR_W+0.28,0.16,0.28),fm);
+  const fT=new THREE.Mesh(new THREE.BoxGeometry(DOOR_W+0.22,0.14,0.22),fm);
   fT.position.set(0,DOOR_H,frontZ); proceduralWallsGroup.add(fT);
 
   [0xd63031,0xffffff,0xd63031].forEach((c,i)=>{
-    const n=mkBox(0.74,1.0,0.030,c);
-    n.position.set((i-1)*0.78,1.90,frontZ-0.08);
+    const n=mkBox(0.56,0.80,0.025,c);
+    n.position.set((i-1)*0.60,1.60,frontZ-0.06);
     proceduralWallsGroup.add(n);
   });
 
-  const sign=mkBox(4.6,0.76,0.16,0x8B0000);
-  sign.position.set(0,WALL_H-0.48,RD-0.12); proceduralWallsGroup.add(sign);
-  const signL=mkBox(4.1,0.52,0.026,0xffd700,0.28);
-  signL.position.set(0,WALL_H-0.48,RD-0.03); proceduralWallsGroup.add(signL);
+  const sign=mkBox(3.2,0.62,0.14,0x8B0000);
+  sign.position.set(0,WALL_H-0.40,RD-0.10); proceduralWallsGroup.add(sign);
+  const signL=mkBox(2.9,0.44,0.022,0xffd700,0.28);
+  signL.position.set(0,WALL_H-0.40,RD-0.02); proceduralWallsGroup.add(signL);
 
   const ceil=new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W,ROOM_D),mat(0xf0ece0,1));
   ceil.rotation.x=Math.PI/2; ceil.position.set(0,WALL_H,0);
   proceduralWallsGroup.add(ceil);
 
-  [[-RW+0.16,2.6,0],[RW-0.16,2.6,0]].forEach(([x,y,z])=>{
+  [[-RW+0.14,2.2,0],[RW-0.14,2.2,0]].forEach(([x,y,z])=>{
     const ng=new THREE.Group();
     [0xd63031,0xffffff,0xd63031].forEach((c,i)=>{
-      const s=mkBox(0.32,0.90,0.08,c); s.position.x=(i-1)*0.38; ng.add(s);
+      const s=mkBox(0.25,0.72,0.07,c); s.position.x=(i-1)*0.29; ng.add(s);
     });
     ng.position.set(x,y,z); proceduralWallsGroup.add(ng);
   });
 
   const da=new THREE.Mesh(
-    new THREE.PlaneGeometry(3.8,3.8),
+    new THREE.PlaneGeometry(2.8,2.8),
     new THREE.MeshStandardMaterial({color:0xf5c842,roughness:1,transparent:true,opacity:0.52})
   );
   da.rotation.x=-Math.PI/2; da.position.set(DELIVERY_POS.x,0.012,DELIVERY_POS.z);
@@ -899,57 +828,57 @@ let proceduralFloorGroup=new THREE.Group();
 // ================================================================
 (function buildCounter(){
   const g=new THREE.Group();
-  const top=mkBox(11.2,0.14,1.0,0xc0392b);
+  const top=mkBox(8.0,0.13,0.90,0xc0392b);
   top.position.y=0.94; g.add(top);
-  const front=mkBox(11.2,0.94,0.10,0x96281b);
-  front.position.set(0,0.47,0.48); g.add(front);
-  [[-5.35,0.47],[5.35,0.47]].forEach(([x])=>{
-    const leg=mkBox(0.14,0.94,0.92,0x7b241c); leg.position.set(x,0.47,0); g.add(leg);
+  const front=mkBox(8.0,0.94,0.09,0x96281b);
+  front.position.set(0,0.47,0.44); g.add(front);
+  [[-3.8,0.47],[3.8,0.47]].forEach(([x])=>{
+    const leg=mkBox(0.12,0.94,0.84,0x7b241c); leg.position.set(x,0.47,0); g.add(leg);
   });
-  const edge=mkBox(11.3,0.06,0.06,0x888888,0.3,0.5);
-  edge.position.set(0,1.01,0.50); g.add(edge);
+  const edge=mkBox(8.1,0.055,0.055,0x888888,0.3,0.5);
+  edge.position.set(0,1.01,0.44); g.add(edge);
   g.position.copy(COUNTER_POS); scene.add(g);
 })();
 
 // ================================================================
-// 発注PC
+// 発注PC（縮小版）
 // ================================================================
 (function buildPC(){
   const g=new THREE.Group();
-  const desk=mkBox(1.8,0.10,0.90,0x2d6dbf);
-  desk.position.y=0.84; g.add(desk);
-  [[0.74,0.40],[0.74,-0.40],[-0.74,0.40],[-0.74,-0.40]].forEach(([x,z])=>{
-    const leg=mkBox(0.07,0.84,0.07,0x1a4a8a); leg.position.set(x,0.42,z); g.add(leg);
+  const desk=mkBox(1.4,0.09,0.76,0x2d6dbf);
+  desk.position.y=0.80; g.add(desk);
+  [[0.60,0.36],[0.60,-0.36],[-0.60,0.36],[-0.60,-0.36]].forEach(([x,z])=>{
+    const leg=mkBox(0.06,0.80,0.06,0x1a4a8a); leg.position.set(x,0.40,z); g.add(leg);
   });
-  const mon=mkBox(0.76,0.54,0.05,0x111111,0.2);
-  mon.position.set(0,1.18,-0.36); g.add(mon);
-  const scr=mkBox(0.68,0.46,0.014,0x00d4ff,0.15,0.1);
-  scr.position.set(0,1.18,-0.335); g.add(scr);
-  const kb=mkBox(0.48,0.024,0.22,0x333333);
-  kb.position.set(0,0.89,0.12); g.add(kb);
-  const mouse=mkBox(0.10,0.024,0.14,0x555555);
-  mouse.position.set(0.44,0.89,0.12); g.add(mouse);
+  const mon=mkBox(0.64,0.46,0.045,0x111111,0.2);
+  mon.position.set(0,1.10,-0.30); g.add(mon);
+  const scr=mkBox(0.56,0.38,0.012,0x00d4ff,0.15,0.1);
+  scr.position.set(0,1.10,-0.278); g.add(scr);
+  const kb=mkBox(0.40,0.020,0.18,0x333333);
+  kb.position.set(0,0.84,0.10); g.add(kb);
+  const mouse=mkBox(0.08,0.020,0.11,0x555555);
+  mouse.position.set(0.36,0.84,0.10); g.add(mouse);
   g.position.copy(PC_POS);
   scene.add(g);
 })();
 
 // ================================================================
-// 在庫棚
+// 在庫棚（縮小版）
 // ================================================================
 const shelfGroup=new THREE.Group();
 (function buildShelf(){
-  const back=mkBox(2.2,2.6,0.14,0x2e7d32,0.7);
-  back.position.y=1.3; shelfGroup.add(back);
-  [0.55,1.2,1.85].forEach(y=>{
-    const shelf=mkBox(2.0,0.052,0.38,0x1b5e20,0.7);
-    shelf.position.set(0,y,0.07); shelfGroup.add(shelf);
+  const back=mkBox(1.8,2.2,0.12,0x2e7d32,0.7);
+  back.position.y=1.1; shelfGroup.add(back);
+  [0.45,1.0,1.55].forEach(y=>{
+    const shelf=mkBox(1.6,0.045,0.30,0x1b5e20,0.7);
+    shelf.position.set(0,y,0.06); shelfGroup.add(shelf);
   });
-  const lbl=mkBox(1.7,0.26,0.046,0xfff9c4,0.8);
-  lbl.position.set(0,2.46,0.08); shelfGroup.add(lbl);
+  const lbl=mkBox(1.4,0.22,0.040,0xfff9c4,0.8);
+  lbl.position.set(0,1.98,0.066); shelfGroup.add(lbl);
   const cols=[0xf7d060,0x3cb371,0xcc5500,0xff8c00];
   cols.forEach((c,i)=>{
-    const bx=mkBox(0.36,0.30,0.30,c,0.6);
-    bx.position.set(-0.55+i*0.38,0.76,0.13); shelfGroup.add(bx);
+    const bx=mkBox(0.28,0.24,0.24,c,0.6);
+    bx.position.set(-0.42+i*0.30,0.62,0.11); shelfGroup.add(bx);
   });
   shelfGroup.position.copy(SHELF_POS);
   shelfGroup.rotation.y=Math.PI/2;
@@ -957,114 +886,111 @@ const shelfGroup=new THREE.Group();
 })();
 
 // ================================================================
-// フォールバック調理ステーション（スケール拡大版）
-// カウンター天板 Y=0.94 に合わせ、機器上面を ~1.0〜1.5 に
+// フォールバック調理ステーション
 // ================================================================
 function buildFallbackNoodleStation(pos){
   const g=new THREE.Group();
-  const body=mkBox(1.4,0.92,0.80,0xe8d8a0,0.6);
-  body.position.set(0,0.46,0); g.add(body);
-  const roller=mkCyl(0.16,0.16,1.30,12,0xaaaaaa,0.4,0.5);
-  roller.rotation.z=Math.PI/2; roller.position.set(0,0.80,0.14); g.add(roller);
+  const body=mkBox(1.1,0.86,0.70,0xe8d8a0,0.6);
+  body.position.set(0,0.43,0); g.add(body);
+  const roller=mkCyl(0.13,0.13,1.05,12,0xaaaaaa,0.4,0.5);
+  roller.rotation.z=Math.PI/2; roller.position.set(0,0.76,0.12); g.add(roller);
   for(let i=-3;i<=3;i++){
-    const nd=mkCyl(0.03,0.03,1.20,6,0xf7d060,0.5);
-    nd.rotation.z=Math.PI/2; nd.position.set(0,0.55+i*0.036,0); g.add(nd);
+    const nd=mkCyl(0.024,0.024,1.0,6,0xf7d060,0.5);
+    nd.rotation.z=Math.PI/2; nd.position.set(0,0.52+i*0.03,0); g.add(nd);
   }
-  [[-0.68,0.32],[0.68,0.32],[-0.68,-0.32],[0.68,-0.32]].forEach(([x,z])=>{
-    const leg=mkBox(0.08,0.28,0.08,0x666666); leg.position.set(x,0.14,z); g.add(leg);
-  });
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
-
 function buildFallbackPotStation(pos){
   const g=new THREE.Group();
-  const base=mkBox(1.6,0.92,0.96,0x555555,0.5,0.4);
-  base.position.set(0,0.46,0); g.add(base);
-  [-0.40,0.40].forEach(x=>{
-    const burner=mkCyl(0.22,0.20,0.055,12,0x333333,0.4,0.5);
-    burner.position.set(x,0.945,0); g.add(burner);
-    const fl=mkCyl(0.14,0.04,0.12,8,0xff6600,0.3);
-    fl.position.set(x,1.00,0); g.add(fl);
+  const base=mkBox(1.3,0.86,0.80,0x555555,0.5,0.4);
+  base.position.set(0,0.43,0); g.add(base);
+  [-0.32,0.32].forEach(x=>{
+    const burner=mkCyl(0.18,0.16,0.048,12,0x333333,0.4,0.5);
+    burner.position.set(x,0.888,0); g.add(burner);
+    const fl=mkCyl(0.11,0.034,0.10,8,0xff6600,0.3);
+    fl.position.set(x,0.94,0); g.add(fl);
   });
-  const pot=mkCyl(0.32,0.28,0.42,16,0x888888,0.3,0.6);
-  pot.position.set(-0.40,1.11,0); g.add(pot);
-  const potInner=mkCyl(0.28,0.28,0.32,16,0x2255aa,0.15);
-  potInner.position.set(-0.40,1.14,0); g.add(potInner);
-  const soup=mkCyl(0.30,0.26,0.46,16,0x8B4513,0.5);
-  soup.position.set(0.40,1.12,0); g.add(soup);
-  const soupInner=mkCyl(0.27,0.27,0.34,16,0xb5651d,0.3);
-  soupInner.position.set(0.40,1.15,0); g.add(soupInner);
-  const lid=mkCyl(0.33,0.33,0.055,16,0x999999,0.3,0.5);
-  lid.position.set(-0.40,1.33,0); g.add(lid);
+  const pot=mkCyl(0.26,0.22,0.36,16,0x888888,0.3,0.6);
+  pot.position.set(-0.32,1.04,0); g.add(pot);
+  const potInner=mkCyl(0.22,0.22,0.26,16,0x2255aa,0.15);
+  potInner.position.set(-0.32,1.06,0); g.add(potInner);
+  const soup=mkCyl(0.24,0.22,0.38,16,0x8B4513,0.5);
+  soup.position.set(0.32,1.06,0); g.add(soup);
+  const lid=mkCyl(0.27,0.27,0.048,16,0x999999,0.3,0.5);
+  lid.position.set(-0.32,1.22,0); g.add(lid);
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
-
 function buildFallbackChashuStation(pos){
   const g=new THREE.Group();
-  const base=mkBox(1.4,0.92,0.80,0xc8b090,0.6);
-  base.position.set(0,0.46,0); g.add(base);
-  [-0.38,0,0.38].forEach(x=>{
-    const roll=mkCyl(0.12,0.14,0.42,10,0x8B2500,0.5);
-    roll.rotation.z=Math.PI/2; roll.position.set(x,1.00,0); g.add(roll);
+  const base=mkBox(1.1,0.86,0.70,0xc8b090,0.6);
+  base.position.set(0,0.43,0); g.add(base);
+  [-0.30,0,0.30].forEach(x=>{
+    const roll=mkCyl(0.09,0.11,0.34,10,0x8B2500,0.5);
+    roll.rotation.z=Math.PI/2; roll.position.set(x,0.93,0); g.add(roll);
   });
-  const blade=mkBox(0.055,0.30,0.72,0xdddddd,0.2,0.8);
-  blade.position.set(0.56,1.09,0); g.add(blade);
-  const bladeHandle=mkBox(0.16,0.08,0.10,0x444444);
-  bladeHandle.position.set(0.56,1.24,0); g.add(bladeHandle);
-  for(let i=0;i<5;i++){
-    const sl=mkCyl(0.12,0.12,0.020,10,0x9B3500,0.6);
-    sl.position.set(0.66+i*0.042,0.94,0.08); g.add(sl);
-  }
+  const blade=mkBox(0.044,0.24,0.58,0xdddddd,0.2,0.8);
+  blade.position.set(0.44,1.02,0); g.add(blade);
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
-
 function buildFallbackNegiStation(pos){
   const g=new THREE.Group();
-  const base=mkBox(1.4,0.88,0.88,0xc8e0c0,0.7);
-  base.position.set(0,0.44,0); g.add(base);
-  const board=mkBox(0.96,0.052,0.56,0xf5deb3,0.5);
-  board.position.set(0,0.90,0); g.add(board);
+  const base=mkBox(1.1,0.82,0.74,0xc8e0c0,0.7);
+  base.position.set(0,0.41,0); g.add(base);
+  const board=mkBox(0.78,0.044,0.46,0xf5deb3,0.5);
+  board.position.set(0,0.84,0); g.add(board);
   for(let i=-2;i<=2;i++){
-    const ng=mkCyl(0.022,0.022,0.64,6,0x2ecc71,0.6);
-    ng.position.set(i*0.07,1.20,0); g.add(ng);
-    const root=mkCyl(0.024,0.024,0.18,6,0xffffff,0.7);
-    root.position.set(i*0.07,0.84,0); g.add(root);
+    const ng=mkCyl(0.018,0.018,0.52,6,0x2ecc71,0.6);
+    ng.position.set(i*0.06,1.10,0); g.add(ng);
   }
-  const knife=mkBox(0.046,0.020,0.38,0xdddddd,0.1,0.9);
-  knife.position.set(-0.44,0.92,0); g.add(knife);
-  const kHandle=mkBox(0.11,0.042,0.10,0x5c3317,0.7);
-  kHandle.position.set(-0.44,0.92,-0.24); g.add(kHandle);
   g.position.set(pos.x,0,pos.z); scene.add(g); return g;
 }
-
+function buildFallbackChahataTai(pos){
+  // 炒飯用作業台のフォールバック
+  const g=new THREE.Group();
+  const base=mkBox(1.2,0.88,0.80,0x4a4a4a,0.5,0.3);
+  base.position.set(0,0.44,0); g.add(base);
+  // 中華鍋
+  const wok=mkCyl(0.30,0.22,0.18,16,0x333333,0.3,0.6);
+  wok.position.set(0,0.97,0); g.add(wok);
+  // 炎エフェクト
+  [-0.08,0,0.08].forEach((x,i)=>{
+    const fl=mkCyl(0.04,0.01,0.12,6,0xff6600,0.2);
+    fl.position.set(x,0.84,i*0.04-0.04); g.add(fl);
+  });
+  // 鍋の中身（ご飯）
+  const rice=mkCyl(0.24,0.24,0.06,14,0xfffacd,0.8);
+  rice.position.set(0,1.02,0); g.add(rice);
+  g.position.set(pos.x,0,pos.z); scene.add(g); return g;
+}
 function buildFallbackChair(x,z){
   const g=new THREE.Group();
-  const sc=mkCyl(0.22,0.22,0.46,16,0x7b4f2e);
-  sc.position.y=0.23; g.add(sc);
-  const se=mkCyl(0.26,0.26,0.06,16,0x4a2800);
-  se.position.y=0.49; g.add(se);
-  const bk=mkBox(0.44,0.52,0.07,0x4a2800);
-  bk.position.set(0,0.78,0.19); g.add(bk);
+  const sc=mkCyl(0.18,0.18,0.38,14,0x7b4f2e);
+  sc.position.y=0.19; g.add(sc);
+  const se=mkCyl(0.21,0.21,0.05,14,0x4a2800);
+  se.position.y=0.41; g.add(se);
+  const bk=mkBox(0.36,0.44,0.06,0x4a2800);
+  bk.position.set(0,0.64,0.16); g.add(bk);
   g.position.set(x,0,z);
   g.rotation.y=Math.PI;
   scene.add(g); return g;
 }
 
-let fallbackStations={noodle:null,pot:null,chashu:null,negi:null};
+let fallbackStations={noodle:null,pot:null,chashu:null,negi:null,chahata:null};
 let chairMeshes=[];
 
 function buildFallbackStations(){
-  fallbackStations.noodle=buildFallbackNoodleStation(NOODLE_SPACE);
-  fallbackStations.pot   =buildFallbackPotStation(POT_SPACE);
-  fallbackStations.chashu=buildFallbackChashuStation(CHASHU_SPACE);
-  fallbackStations.negi  =buildFallbackNegiStation(NEGI_SPACE);
+  fallbackStations.noodle = buildFallbackNoodleStation(NOODLE_SPACE);
+  fallbackStations.pot    = buildFallbackPotStation(POT_SPACE);
+  fallbackStations.chashu = buildFallbackChashuStation(CHASHU_SPACE);
+  fallbackStations.negi   = buildFallbackNegiStation(NEGI_SPACE);
+  // chahata は購入時に生成
   SEAT_XS.forEach(x=>{
     chairMeshes.push(buildFallbackChair(x,CUSTOMER_TZ));
   });
 }
 
 // ================================================================
-// GLBモデルの正規化・配置
+// GLBモデル正規化
 // ================================================================
 function normalizeModelToFloor(scene3D,targetHeight){
   scene3D.traverse(child=>{if(child.isMesh){child.castShadow=true;child.receiveShadow=true;}});
@@ -1081,7 +1007,6 @@ function normalizeModelToFloor(scene3D,targetHeight){
   wrapper.add(scene3D);
   return wrapper;
 }
-
 function normalizeHuman(scene3D){
   scene3D.traverse(child=>{if(child.isMesh){child.castShadow=true;child.receiveShadow=true;}});
   scene3D.updateMatrixWorld(true);
@@ -1096,25 +1021,15 @@ function normalizeHuman(scene3D){
   wrapper.add(scene3D);
   return wrapper;
 }
-
-// ================================================================
-// placeGLBOverFallback
-//   targetHeight: GLB内部の正規化高さ（2.2 固定）
-//   scaleOverride: wrapper 全体への追加スケール = UNIFORM_KITCHEN_SCALE
-//   最終表示高さ = 2.2 × 0.70 ≈ 1.54（カウンター天板 0.94 より高い、人間が立って調理できる高さ）
-// ================================================================
 function placeGLBOverFallback(model,pos,targetHeight,fallbackKey,rotY=0,scaleOverride=null){
-  if(fallbackStations[fallbackKey]){scene.remove(fallbackStations[fallbackKey]);fallbackStations[fallbackKey]=null;}
+  if(fallbackKey&&fallbackStations[fallbackKey]){scene.remove(fallbackStations[fallbackKey]);fallbackStations[fallbackKey]=null;}
   const wrapper=normalizeModelToFloor(model,targetHeight);
-  if(scaleOverride!=null){
-    wrapper.scale.setScalar(scaleOverride);
-  }
+  if(scaleOverride!=null) wrapper.scale.setScalar(scaleOverride);
   wrapper.position.set(pos.x,0,pos.z);
   wrapper.rotation.y=rotY;
   scene.add(wrapper);
   return wrapper;
 }
-
 function placeFloorModel(model){
   scene.remove(proceduralFloorGroup);
   proceduralFloorGroup=new THREE.Group();
@@ -1123,8 +1038,8 @@ function placeFloorModel(model){
   const bb=new THREE.Box3().setFromObject(model);
   const sz=new THREE.Vector3(); bb.getSize(sz);
   const maxXZ=Math.max(sz.x,sz.z);
-  const sc=maxXZ>0.001?Math.min(ROOM_W/maxXZ,ROOM_D/maxXZ):1.0;
-  model.scale.setScalar(sc*0.98);
+  const sc=maxXZ>0.001?Math.min(ROOM_W/maxXZ,ROOM_D/maxXZ)*0.96:1.0;
+  model.scale.setScalar(sc);
   model.updateMatrixWorld(true);
   const bb2=new THREE.Box3().setFromObject(model);
   model.position.y=-bb2.min.y;
@@ -1133,23 +1048,22 @@ function placeFloorModel(model){
   scene.add(wrapper);
 
   const sideWalk=new THREE.Mesh(
-    new THREE.PlaneGeometry(ROOM_W+12,12),
+    new THREE.PlaneGeometry(ROOM_W+8,8),
     new THREE.MeshStandardMaterial({color:0x888898,roughness:0.95})
   );
   sideWalk.rotation.x=-Math.PI/2;
-  sideWalk.position.set(0,-0.005,-11);
+  sideWalk.position.set(0,-0.005,-7);
   sideWalk.receiveShadow=true;
   scene.add(sideWalk);
 
   const da=new THREE.Mesh(
-    new THREE.PlaneGeometry(3.8,3.8),
+    new THREE.PlaneGeometry(2.8,2.8),
     new THREE.MeshStandardMaterial({color:0xf5c842,roughness:1,transparent:true,opacity:0.52})
   );
   da.rotation.x=-Math.PI/2;
   da.position.set(DELIVERY_POS.x,0.012,DELIVERY_POS.z);
   scene.add(da);
 }
-
 function placeWallModels(model){
   if(proceduralWallsGroup){ proceduralWallsGroup.visible=false; }
   if(wallModelGroup){ scene.remove(wallModelGroup); wallModelGroup=null; }
@@ -1157,14 +1071,13 @@ function placeWallModels(model){
   model.updateMatrixWorld(true);
   const bb=new THREE.Box3().setFromObject(model);
   const sz=new THREE.Vector3(); bb.getSize(sz);
-  const baseW=Math.max(sz.x, sz.z, 1.0);
-  const baseH=Math.max(sz.y, 1.0);
-  const wallScale=Math.max(10.0, (WALL_H/baseH) * 5.5);
-  const pieceW=baseW * wallScale * 0.92;
+  const baseW=Math.max(sz.x,sz.z,1.0);
+  const baseH=Math.max(sz.y,1.0);
+  const wallScale=Math.max(7.0,(WALL_H/baseH)*4.0);
+  const pieceW=baseW*wallScale*0.92;
   const RW=ROOM_W/2, RD=ROOM_D/2;
 
-  wallModelGroup = new THREE.Group();
-
+  wallModelGroup=new THREE.Group();
   function addPiece(x,z,rotY){
     const clone=model.clone(true);
     clone.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
@@ -1178,43 +1091,36 @@ function placeWallModels(model){
     wrapper.rotation.y=rotY;
     wallModelGroup.add(wrapper);
   }
-
   const countX=Math.ceil(ROOM_W/pieceW)+2;
   const countZ=Math.ceil(ROOM_D/pieceW)+2;
-
   for(let i=0;i<countX;i++){
-    const x=-RW + i*pieceW;
+    const x=-RW+i*pieceW;
     addPiece(x,RD,0);
-    if(Math.abs(x) > 1.8){
-      addPiece(x,-RD,Math.PI);
-    }
+    if(Math.abs(x)>1.4) addPiece(x,-RD,Math.PI);
   }
   for(let i=0;i<countZ;i++){
-    const z=-RD + i*pieceW;
+    const z=-RD+i*pieceW;
     addPiece(-RW,z,Math.PI/2);
     addPiece(RW,z,-Math.PI/2);
   }
-
   scene.add(wallModelGroup);
 }
-
 function placeSotoModel(model){
   model.traverse(c=>{if(c.isMesh){c.castShadow=false;c.receiveShadow=true;}});
   model.updateMatrixWorld(true);
   const bb=new THREE.Box3().setFromObject(model);
   const sz=new THREE.Vector3(); bb.getSize(sz);
   const maxD=Math.max(sz.x,sz.y,sz.z);
-  const sc=maxD>0.001?(ROOM_W*2.2)/maxD:1.0;
+  const sc=maxD>0.001?(ROOM_W*2.0)/maxD:1.0;
   model.scale.setScalar(sc);
   model.updateMatrixWorld(true);
   const bb2=new THREE.Box3().setFromObject(model);
   model.position.y=-bb2.min.y;
   const wrapper=new THREE.Group();
   wrapper.add(model);
-  wrapper.position.set(0,0,-ROOM_D/2-8);
+  wrapper.position.set(0,0,-ROOM_D/2-6);
   scene.add(wrapper);
 }
-
 function placeISUModels(model){
   chairMeshes.forEach(c=>scene.remove(c)); chairMeshes=[];
   SEAT_XS.forEach((xOff)=>{
@@ -1223,7 +1129,7 @@ function placeISUModels(model){
     clone.updateMatrixWorld(true);
     const bb=new THREE.Box3().setFromObject(clone);
     const sz=new THREE.Vector3(); bb.getSize(sz);
-    const sc=sz.y>0.01?0.50/sz.y:1.0;
+    const sc=sz.y>0.01?0.46/sz.y:1.0;
     clone.scale.setScalar(sc);
     clone.updateMatrixWorld(true);
     const bb2=new THREE.Box3().setFromObject(clone);
@@ -1235,24 +1141,10 @@ function placeISUModels(model){
 }
 
 // ================================================================
-// ★ 鍋モデル配置ヘルパー
-// nabe.glb / waternabe.glb を同一スケール・同一座標で配置し、
-// 表示/非表示を調理ステートに連動して切り替える
+// ★ 鍋モデル配置
 // ================================================================
-
-/**
- * normalizeAndPlaceNabe
- * model: THREE.Scene (GLTFLoader から取得)
- * pos: THREE.Vector3
- * fallbackKey: 'pot' (フォールバック機器を除去するため)
- * rotY: 回転角
- * scaleOverride: 最終スケール
- * visible: 初期表示状態
- * returns: wrapper Group
- */
-function normalizeAndPlaceNabe(model, pos, fallbackKey, rotY, scaleOverride, visible){
-  // フォールバックの除去は nabe.glb ロード時のみ行う（最初の1回）
-  if(fallbackKey && fallbackStations[fallbackKey]){
+function normalizeAndPlaceNabe(model,pos,fallbackKey,rotY,scaleOverride,visible){
+  if(fallbackKey&&fallbackStations[fallbackKey]){
     scene.remove(fallbackStations[fallbackKey]);
     fallbackStations[fallbackKey]=null;
   }
@@ -1266,77 +1158,83 @@ function normalizeAndPlaceNabe(model, pos, fallbackKey, rotY, scaleOverride, vis
   model.updateMatrixWorld(true);
   const bb2=new THREE.Box3().setFromObject(model);
   model.position.y=-bb2.min.y;
-
   const wrapper=new THREE.Group();
   wrapper.add(model);
   wrapper.scale.setScalar(scaleOverride);
-  wrapper.position.set(pos.x, 0, pos.z);
+  wrapper.position.set(pos.x,0,pos.z);
   wrapper.rotation.y=rotY;
   wrapper.visible=visible;
   scene.add(wrapper);
   return wrapper;
 }
 
-/**
- * makeBoliedNoodleInPot
- * waternabe の内部（鍋の上）に麺オブジェクトを生成して追加する
- * waternabe.glb の天面 Y を推定して配置
- */
+// ================================================================
+// ★★★ バグ修正：鍋内部の正確なワールド座標を取得するユーティリティ
+// waternabeWrapper の鍋上面 Y + 少し下 の「お湯の中」へ麺を配置
+// ================================================================
+function getNoodleInsidePotWorldY(){
+  if(waternabeWrapper && waternabeWrapper.visible){
+    waternabeWrapper.updateMatrixWorld(true);
+    const bb=new THREE.Box3().setFromObject(waternabeWrapper);
+    // 鍋上面から少し下（上面の 70% の高さ = お湯の中）
+    return bb.min.y + (bb.max.y - bb.min.y)*0.70;
+  }
+  // フォールバック or waternabe なし時：POT_SPACE の固定 Y
+  return 0.85;
+}
+
 function addNoodleToWaterNabe(){
   if(!waternabeWrapper) return;
-  // 既存の麺を除去
   if(waternabeNoodleMesh){
     waternabeWrapper.remove(waternabeNoodleMesh);
     waternabeNoodleMesh=null;
   }
-  // waternabeWrapper の上面Y を BOIL_SCALE から推定
-  // 旧 potInner Y ≈ 1.14 のスケール後 = 1.14 × BOIL_SCALE ≈ 0.798
-  const noodleInsideY = 1.14 * BOIL_SCALE;
+  // ★ waternabe のワールド上面Y から 30% 下 → 「お湯の中」
+  // waternabeWrapper はスケール BOIL_SCALE 倍されているため
+  // ローカル Y での正確な配置を行う
+  waternabeWrapper.updateMatrixWorld(true);
+  const bb=new THREE.Box3().setFromObject(waternabeWrapper);
+  const worldTopY    = bb.max.y;
+  const worldCenterY = bb.min.y + (bb.max.y-bb.min.y)*0.65;
+  // ワールド → ラッパーのローカル座標に変換
+  const localY = (worldCenterY - waternabeWrapper.position.y) / waternabeWrapper.scale.y;
 
-  const noodleGroup = new THREE.Group();
+  const noodleGroup=new THREE.Group();
   for(let i=0;i<7;i++){
-    const noodleLen = 0.44 * BOIL_SCALE;
-    const noodleR   = 0.042 * BOIL_SCALE;
-    const n = mkCyl(noodleR, noodleR, noodleLen, 8, 0xf7d34c, 0.55);
-    n.rotation.x = Math.PI/2;
-    const spreadX = 0.060 * BOIL_SCALE;
+    const noodleLen=0.36*BOIL_SCALE;
+    const noodleR  =0.034*BOIL_SCALE;
+    const n=mkCyl(noodleR,noodleR,noodleLen,8,0xf7d34c,0.55);
+    n.rotation.x=Math.PI/2;
+    const spreadX=0.050*BOIL_SCALE;
     n.position.set(
       (i-3)*spreadX,
-      noodleInsideY,
-      (Math.random()-0.5)*0.06*BOIL_SCALE
+      localY,
+      (Math.random()-0.5)*0.05*BOIL_SCALE
     );
     noodleGroup.add(n);
   }
-  // ラッパーのスケールの逆数で正規化（ラッパーがすでに BOIL_SCALE 倍されているため
-  // 子要素は 1/BOIL_SCALE 倍しないとワールド座標上で二重拡大される）
-  noodleGroup.scale.setScalar(1.0 / BOIL_SCALE);
+  // wrapper は既に BOIL_SCALE 倍されているので、子は 1/BOIL_SCALE で逆補正
+  noodleGroup.scale.setScalar(1.0/BOIL_SCALE);
   waternabeWrapper.add(noodleGroup);
-  waternabeNoodleMesh = noodleGroup;
+  waternabeNoodleMesh=noodleGroup;
 }
 
-/**
- * switchNabePot
- * mode: 'normal'  → nabe.glb を表示、waternabe.glb を非表示
- *       'boiling' → nabe.glb を非表示、waternabe.glb を表示＋麺追加
- *       'yukiri'  → waternabe.glb を非表示（麺も非表示）、nabe.glb を表示
- */
 function switchNabePot(mode){
   if(mode==='boiling'){
-    if(nabeWrapper)     nabeWrapper.visible    = false;
+    if(nabeWrapper)      nabeWrapper.visible    = false;
     if(waternabeWrapper){
       waternabeWrapper.visible = true;
       addNoodleToWaterNabe();
     }
   } else {
-    // 'normal' または 'yukiri'
     if(waternabeWrapper){
-      waternabeWrapper.visible = false;
+      waternabeWrapper.visible=false;
       if(waternabeNoodleMesh){
         waternabeWrapper.remove(waternabeNoodleMesh);
         waternabeNoodleMesh=null;
       }
     }
-    if(nabeWrapper) nabeWrapper.visible = true;
+    if(nabeWrapper) nabeWrapper.visible=true;
   }
 }
 
@@ -1347,12 +1245,12 @@ function makeCardboardBox(type){
   const g=new THREE.Group();
   const cols={men:0xdba35a,negi:0x9dc06e,chashu:0xd4896e,soup:0xe8bb7a};
   const col=cols[type]||0xdba35a;
-  const box=mkBox(0.54,0.48,0.46,col,0.85);
-  box.position.y=0.24; g.add(box);
-  const tape1=mkBox(0.56,0.042,0.046,0xf5c842,0.6);
-  tape1.position.set(0,0.37,0); g.add(tape1);
-  const tape2=mkBox(0.046,0.042,0.48,0xf5c842,0.6);
-  tape2.position.set(0,0.37,0); g.add(tape2);
+  const box=mkBox(0.46,0.40,0.38,col,0.85);
+  box.position.y=0.20; g.add(box);
+  const tape1=mkBox(0.48,0.036,0.040,0xf5c842,0.6);
+  tape1.position.set(0,0.32,0); g.add(tape1);
+  const tape2=mkBox(0.040,0.036,0.40,0xf5c842,0.6);
+  tape2.position.set(0,0.32,0); g.add(tape2);
   g.userData.boxType=type;
   return g;
 }
@@ -1363,20 +1261,20 @@ function makeCardboardBox(type){
 function makeFallbackHuman(ci){
   const colors=[0xee6b2f,0x3498db,0x9b59b6];
   const g=new THREE.Group();
-  const body=mkCyl(0.22,0.22,0.9,12,colors[ci%3]);
-  body.position.y=0.45; g.add(body);
-  const head=mkSph(0.24,12,0xffe0b2);
-  head.position.y=1.07; g.add(head);
-  [-0.09,0.09].forEach(ex=>{
-    const eye=mkSph(0.036,8,0x111111);
-    eye.position.set(ex,1.13,0.22); g.add(eye);
+  const body=mkCyl(0.20,0.20,0.86,12,colors[ci%3]);
+  body.position.y=0.43; g.add(body);
+  const head=mkSph(0.22,12,0xffe0b2);
+  head.position.y=1.00; g.add(head);
+  [-0.08,0.08].forEach(ex=>{
+    const eye=mkSph(0.030,8,0x111111);
+    eye.position.set(ex,1.06,0.20); g.add(eye);
   });
-  [-0.30,0.30].forEach(ax=>{
-    const arm=mkCyl(0.07,0.07,0.50,8,colors[ci%3]);
-    arm.rotation.z=Math.PI/2; arm.position.set(ax,0.82,0); g.add(arm);
+  [-0.27,0.27].forEach(ax=>{
+    const arm=mkCyl(0.060,0.060,0.44,8,colors[ci%3]);
+    arm.rotation.z=Math.PI/2; arm.position.set(ax,0.76,0); g.add(arm);
   });
-  [-0.12,0.12].forEach(lx=>{
-    const leg=mkBox(0.13,0.54,0.13,0x333333);
+  [-0.10,0.10].forEach(lx=>{
+    const leg=mkBox(0.11,0.46,0.11,0x333333);
     leg.position.set(lx,0,0); g.add(leg);
   });
   return g;
@@ -1387,141 +1285,223 @@ function makeFallbackHuman(ci){
 // ================================================================
 function makeFallbackRamen(){
   const g=new THREE.Group();
-  const bowl=mkCyl(0.22,0.18,0.16,16,0xf5f5dc);
-  bowl.position.y=0.08; g.add(bowl);
+  const bowl=mkCyl(0.20,0.16,0.14,16,0xf5f5dc);
+  bowl.position.y=0.07; g.add(bowl);
   const soup=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.20,0.20,0.01,16),mat(0xb03020,0.8)
+    new THREE.CylinderGeometry(0.18,0.18,0.01,16),mat(0xb03020,0.8)
   );
-  soup.position.y=0.148; g.add(soup);
-  const nd=mkCyl(0.13,0.13,0.05,10,0xf7d94c);
-  nd.position.y=0.160; g.add(nd);
-  const ch=mkCyl(0.065,0.065,0.028,8,0x8B2500);
-  ch.position.set(0.08,0.17,0.055); g.add(ch);
-  const ng=mkBox(0.025,0.12,0.025,0x3cb371);
-  ng.position.set(-0.06,0.175,-0.04); g.add(ng);
-  g.scale.set(1.25,1.25,1.25);
+  soup.position.y=0.135; g.add(soup);
+  const nd=mkCyl(0.11,0.11,0.045,10,0xf7d94c);
+  nd.position.y=0.148; g.add(nd);
+  const ch=mkCyl(0.055,0.055,0.024,8,0x8B2500);
+  ch.position.set(0.07,0.158,0.048); g.add(ch);
+  const ng=mkBox(0.022,0.10,0.022,0x3cb371);
+  ng.position.set(-0.05,0.162,-0.035); g.add(ng);
+  g.scale.set(1.18,1.18,1.18);
   return g;
 }
 
 // ================================================================
-// 沸騰エフェクト（BOIL_SCALE=0.70 に合わせたサイズ）
-// 旧 BOIL_SCALE=0.47 → 新 0.70
-// 旧座標 × (0.70/0.47) = 旧座標 × 1.489 で位置を調整
+// フォールバックチャーハン
+// ================================================================
+function makeFallbackChahan(){
+  const g=new THREE.Group();
+  const bowl=mkCyl(0.20,0.16,0.12,16,0xf5f5dc);
+  bowl.position.y=0.06; g.add(bowl);
+  const rice=mkCyl(0.17,0.17,0.06,14,0xfffacd,0.8);
+  rice.position.y=0.12; g.add(rice);
+  const egg=mkSph(0.065,8,0xffd700,0.7);
+  egg.position.set(0.07,0.155,0.04); g.add(egg);
+  [-1,0,1].forEach(i=>{
+    const sc=mkBox(0.018,0.08,0.018,0x3cb371);
+    sc.position.set(i*0.06,0.168,0.05); g.add(sc);
+  });
+  g.scale.set(1.15,1.15,1.15);
+  return g;
+}
+
+// ================================================================
+// 沸騰エフェクト
 // ================================================================
 function createBoilingFX(){
   if(boilingFXGroup) return boilingFXGroup;
-  boilingFXGroup = new THREE.Group();
-  boilingFXGroup.position.set(POT_SPACE.x, 0, POT_SPACE.z);
-  boilingFXGroup.visible = false;
+  boilingFXGroup=new THREE.Group();
+  boilingFXGroup.position.set(POT_SPACE.x,0,POT_SPACE.z);
+  boilingFXGroup.visible=false;
 
-  // 水面（BOIL_SCALE=0.70）
-  const waterRadius = 0.42 * BOIL_SCALE;      // ≈ 0.294
-  const waterY      = 1.18 * BOIL_SCALE;      // ≈ 0.826
-  const water = new THREE.Mesh(
-    new THREE.CircleGeometry(waterRadius, 28),
+  const waterRadius=0.38*BOIL_SCALE;
+  const waterY=1.18*BOIL_SCALE;
+  const water=new THREE.Mesh(
+    new THREE.CircleGeometry(waterRadius,26),
     new THREE.MeshStandardMaterial({
-      color:0x8bdcff,
-      transparent:true,
-      opacity:0.52,
-      roughness:0.18,
-      metalness:0.0,
-      side:THREE.DoubleSide
+      color:0x8bdcff,transparent:true,opacity:0.50,
+      roughness:0.18,metalness:0.0,side:THREE.DoubleSide
     })
   );
-  water.rotation.x = -Math.PI/2;
-  water.position.set(0, waterY, 0);
+  water.rotation.x=-Math.PI/2;
+  water.position.set(0,waterY,0);
   boilingFXGroup.add(water);
-  boilingWaterMesh = water;
-  boilingWaterBaseY = waterY;
+  boilingWaterMesh=water;
+  boilingWaterBaseY=waterY;
 
-  // 泡（BOIL_SCALE=0.70）
-  boilingBubbleMeshes = [];
-  const bubbleMinY = 1.02 * BOIL_SCALE;   // ≈ 0.714
-  const bubbleMaxY = 1.38 * BOIL_SCALE;   // ≈ 0.966
-  for(let i=0;i<16;i++){
-    const radius = (0.03 + Math.random()*0.022) * BOIL_SCALE;
-    const b = new THREE.Mesh(
-      new THREE.SphereGeometry(radius, 8, 8),
-      new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.72})
+  boilingBubbleMeshes=[];
+  const bubbleMinY=1.02*BOIL_SCALE;
+  const bubbleMaxY=1.36*BOIL_SCALE;
+  for(let i=0;i<14;i++){
+    const radius=(0.026+Math.random()*0.020)*BOIL_SCALE;
+    const b=new THREE.Mesh(
+      new THREE.SphereGeometry(radius,8,8),
+      new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0.70})
     );
-    const spreadR = 0.24 * BOIL_SCALE;
+    const spreadR=0.22*BOIL_SCALE;
     b.position.set(
       (Math.random()-0.5)*spreadR,
-      bubbleMinY + Math.random()*(bubbleMaxY - bubbleMinY),
+      bubbleMinY+Math.random()*(bubbleMaxY-bubbleMinY),
       (Math.random()-0.5)*spreadR
     );
-    b.userData = {
-      baseX: b.position.x,
-      baseZ: b.position.z,
-      seed:  Math.random()*10,
-      speed: 1.1 + Math.random()*1.7,
-      bubbleMinY, bubbleMaxY
+    b.userData={
+      baseX:b.position.x,baseZ:b.position.z,
+      seed:Math.random()*10,speed:1.0+Math.random()*1.6,
+      bubbleMinY,bubbleMaxY
     };
     boilingFXGroup.add(b);
     boilingBubbleMeshes.push(b);
   }
-
   scene.add(boilingFXGroup);
   return boilingFXGroup;
 }
 
 function startBoilingVisuals(){
   createBoilingFX();
-  boilingFXGroup.visible = true;
-  boilingWaterPhase = 0;
-  if(boilingNoodleMesh){
-    boilingFXGroup.remove(boilingNoodleMesh);
-    boilingNoodleMesh = null;
-  }
-  // 麺（BOIL_SCALE=0.70）
-  const noodleY = 1.46 * BOIL_SCALE;   // ≈ 1.022
-  const noodleGroup = new THREE.Group();
+  boilingFXGroup.visible=true;
+  boilingWaterPhase=0;
+  if(boilingNoodleMesh){ boilingFXGroup.remove(boilingNoodleMesh); boilingNoodleMesh=null; }
+
+  // ★★★ 沸騰エフェクトの麺もワールド座標で正確配置
+  const potWorldY = getNoodleInsidePotWorldY();
+  const fxLocalY  = potWorldY - POT_SPACE.y; // boilingFXGroup は Y=0 を origin に置いている
+
+  const noodleGroup=new THREE.Group();
   for(let i=0;i<6;i++){
-    const noodleLen = 0.44 * BOIL_SCALE;
-    const noodleR   = 0.042 * BOIL_SCALE;
-    const n = mkCyl(noodleR, noodleR, noodleLen, 8, 0xf7d34c, 0.55);
-    n.rotation.x = Math.PI/2;
-    const spreadX = 0.058 * BOIL_SCALE;
-    n.position.set((i-2.5)*spreadX, noodleY, (Math.random()-0.5)*0.052*BOIL_SCALE);
+    const noodleLen=0.38*BOIL_SCALE;
+    const noodleR  =0.036*BOIL_SCALE;
+    const n=mkCyl(noodleR,noodleR,noodleLen,8,0xf7d34c,0.55);
+    n.rotation.x=Math.PI/2;
+    const spreadX=0.050*BOIL_SCALE;
+    n.position.set((i-2.5)*spreadX,fxLocalY,(Math.random()-0.5)*0.046*BOIL_SCALE);
     noodleGroup.add(n);
   }
   boilingFXGroup.add(noodleGroup);
-  boilingNoodleMesh = noodleGroup;
+  boilingNoodleMesh=noodleGroup;
 }
 
 function updateBoilingVisuals(dt){
-  if(!boilingFXGroup || !boilingFXGroup.visible) return;
-  boilingWaterPhase += dt;
+  if(!boilingFXGroup||!boilingFXGroup.visible) return;
+  boilingWaterPhase+=dt;
   if(boilingWaterMesh){
-    boilingWaterMesh.position.y = boilingWaterBaseY + Math.sin(boilingWaterPhase*8.0)*0.020 + Math.sin(boilingWaterPhase*16.0)*0.010;
-    boilingWaterMesh.rotation.z = Math.sin(boilingWaterPhase*6.0)*0.03;
+    boilingWaterMesh.position.y=boilingWaterBaseY+Math.sin(boilingWaterPhase*8.0)*0.018+Math.sin(boilingWaterPhase*16.0)*0.009;
+    boilingWaterMesh.rotation.z=Math.sin(boilingWaterPhase*6.0)*0.028;
   }
-  boilingBubbleMeshes.forEach((b, idx)=>{
-    const p = boilingWaterPhase * b.userData.speed + b.userData.seed;
-    const range = b.userData.bubbleMaxY - b.userData.bubbleMinY;
-    b.position.x = b.userData.baseX + Math.sin(p*2.3)*0.055*BOIL_SCALE;
-    b.position.z = b.userData.baseZ + Math.cos(p*2.0)*0.055*BOIL_SCALE;
-    b.position.y = b.userData.bubbleMinY + ((p*0.28 + idx*0.07) % range);
-    b.material.opacity = 0.38 + (Math.sin(p*4.0)*0.28 + 0.28);
-    b.scale.setScalar(0.8 + Math.sin(p*3.0)*0.22);
+  boilingBubbleMeshes.forEach((b,idx)=>{
+    const p=boilingWaterPhase*b.userData.speed+b.userData.seed;
+    const range=b.userData.bubbleMaxY-b.userData.bubbleMinY;
+    b.position.x=b.userData.baseX+Math.sin(p*2.3)*0.050*BOIL_SCALE;
+    b.position.z=b.userData.baseZ+Math.cos(p*2.0)*0.050*BOIL_SCALE;
+    b.position.y=b.userData.bubbleMinY+((p*0.28+idx*0.07)%range);
+    b.material.opacity=0.36+(Math.sin(p*4.0)*0.26+0.26);
+    b.scale.setScalar(0.78+Math.sin(p*3.0)*0.20);
   });
   if(boilingNoodleMesh){
-    const noodleBaseY = 1.46 * BOIL_SCALE;
-    boilingNoodleMesh.position.y = noodleBaseY + Math.sin(boilingWaterPhase*10.0)*0.024*BOIL_SCALE;
-    boilingNoodleMesh.rotation.z = Math.sin(boilingWaterPhase*4.0)*0.09;
+    const baseY=boilingNoodleMesh.children[0]?.position.y ?? 1.02*BOIL_SCALE;
+    boilingNoodleMesh.position.y=Math.sin(boilingWaterPhase*10.0)*0.020*BOIL_SCALE;
+    boilingNoodleMesh.rotation.z=Math.sin(boilingWaterPhase*4.0)*0.08;
   }
 }
 
 function hideBoilingNoodle(){
-  if(boilingNoodleMesh && boilingFXGroup){
-    boilingFXGroup.remove(boilingNoodleMesh);
-    boilingNoodleMesh = null;
-  }
+  if(boilingNoodleMesh&&boilingFXGroup){ boilingFXGroup.remove(boilingNoodleMesh); boilingNoodleMesh=null; }
 }
-
 function stopBoilingVisuals(){
   hideBoilingNoodle();
-  if(boilingFXGroup) boilingFXGroup.visible = false;
+  if(boilingFXGroup) boilingFXGroup.visible=false;
+}
+
+// ================================================================
+// テボ（pol.glb）湯切りシステム
+// ================================================================
+let polGlbModel=null;
+let tebboPivot=null;
+let tebboVisible=false;
+let yukiriAnim={active:false,t:0,totalDuration:0.28,baseY:0,amp:0.24};
+
+function showTebbo(){ if(!tebboVisible){ if(tebboPivot) tebboPivot.visible=true; tebboVisible=true; } }
+function hideTebbo(){ if(tebboVisible){ if(tebboPivot) tebboPivot.visible=false; tebboVisible=false; } yukiriAnim.active=false; }
+function triggerYukiriAnim(){ if(!tebboPivot) return; yukiriAnim.active=true; yukiriAnim.t=0; }
+
+function buildTebboFromModel(model){
+  const wrapper=new THREE.Group();
+  const bb=new THREE.Box3().setFromObject(model);
+  const sz=new THREE.Vector3(); bb.getSize(sz);
+  const maxD=Math.max(sz.x,sz.y,sz.z);
+  const sc=maxD>0.001?0.28/maxD:1.0;
+  model.scale.setScalar(sc);
+  model.updateMatrixWorld(true);
+  const bb2=new THREE.Box3().setFromObject(model);
+  model.position.y=-bb2.min.y;
+  model.traverse(c=>{if(c.isMesh) c.castShadow=true;});
+  wrapper.add(model);
+  return wrapper;
+}
+function buildFallbackTebbo(){
+  const g=new THREE.Group();
+  const handle=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.019,0.019,0.32,8),
+    new THREE.MeshStandardMaterial({color:0x8B4513,roughness:0.7})
+  );
+  handle.position.set(0,0,0); g.add(handle);
+  const cup=new THREE.Mesh(
+    new THREE.CylinderGeometry(0.094,0.076,0.10,12,1,true),
+    new THREE.MeshStandardMaterial({color:0xaaaaaa,roughness:0.5,metalness:0.6,wireframe:true})
+  );
+  cup.position.y=0.19; g.add(cup);
+  const cupBottom=new THREE.Mesh(
+    new THREE.CircleGeometry(0.076,12),
+    new THREE.MeshStandardMaterial({color:0x888888,roughness:0.5,metalness:0.6,wireframe:true})
+  );
+  cupBottom.rotation.x=-Math.PI/2; cupBottom.position.y=0.14; g.add(cupBottom);
+  return g;
+}
+function setupTebboPivot(model){
+  if(tebboPivot){ scene.remove(tebboPivot); tebboPivot=null; }
+  tebboPivot=new THREE.Group();
+  tebboPivot.visible=false;
+  const tebboMesh=model?buildTebboFromModel(model):buildFallbackTebbo();
+  tebboMesh.rotation.x=-0.38;
+  tebboMesh.rotation.z=0.22;
+  tebboPivot.add(tebboMesh);
+  scene.add(tebboPivot);
+}
+function updateTebboPosition(dt){
+  if(!tebboPivot||!tebboVisible) return;
+  const f=getCamFwd(),r=getCamRight();
+  tebboPivot.position.set(
+    playerPos.x+f.x*0.50+r.x*0.32,
+    playerPos.y-0.56+Math.sin(pitch)*0.1,
+    playerPos.z+f.z*0.50+r.z*0.32
+  );
+  tebboPivot.rotation.y=yaw+0.5;
+  if(yukiriAnim.active){
+    yukiriAnim.t+=dt;
+    const progress=yukiriAnim.t/yukiriAnim.totalDuration;
+    if(progress>=1.0){ yukiriAnim.active=false; yukiriAnim.t=0; }
+    else{
+      const shake=Math.sin(progress*Math.PI*3)*yukiriAnim.amp*(1-progress*0.4);
+      tebboPivot.position.y+=shake;
+      const wobble=Math.sin(progress*Math.PI*6)*0.036;
+      tebboPivot.position.x+=wobble*f.x;
+      tebboPivot.position.z+=wobble*f.z;
+    }
+  }
 }
 
 // ================================================================
@@ -1530,52 +1510,61 @@ function stopBoilingVisuals(){
 function makeHandMesh(type){
   switch(type){
     case 'cardboard': return makeCardboardBox(carryingBox?.type||'men');
-    case 'refill_men':{const g=new THREE.Group();const pkg=mkBox(0.34,0.22,0.26,0xf7d060,0.6);g.add(pkg);return g;}
-    case 'refill_negi':{const g=new THREE.Group();[-1,0,1].forEach(i=>{const ng=mkCyl(0.02,0.02,0.36,6,0x3cb371,0.6);ng.position.set(i*0.06,0,0);g.add(ng);});return g;}
-    case 'refill_chashu': return mkCyl(0.14,0.14,0.10,10,0x8B2500,0.5);
-    case 'refill_soup':   return mkCyl(0.10,0.10,0.27,10,0xff8c00,0.4,0.3);
-    case 'raw_noodle':{const g=new THREE.Group();[-1,0,1].forEach(i=>{const n=mkCyl(0.09,0.09,0.06,10,0xf5d060);n.rotation.z=Math.PI/2;n.position.set(i*0.20,0,0);g.add(n);});return g;}
+    case 'refill_men':{const g=new THREE.Group();const pkg=mkBox(0.28,0.18,0.22,0xf7d060,0.6);g.add(pkg);return g;}
+    case 'refill_negi':{const g=new THREE.Group();[-1,0,1].forEach(i=>{const ng=mkCyl(0.016,0.016,0.30,6,0x3cb371,0.6);ng.position.set(i*0.05,0,0);g.add(ng);});return g;}
+    case 'refill_chashu': return mkCyl(0.11,0.11,0.09,10,0x8B2500,0.5);
+    case 'refill_soup':   return mkCyl(0.082,0.082,0.22,10,0xff8c00,0.4,0.3);
+    case 'raw_noodle':{const g=new THREE.Group();[-1,0,1].forEach(i=>{const n=mkCyl(0.076,0.076,0.050,10,0xf5d060);n.rotation.z=Math.PI/2;n.position.set(i*0.16,0,0);g.add(n);});return g;}
     case 'boiled_noodle': return new THREE.Group();
-    case 'bowl_empty':    return mkCyl(0.22,0.17,0.14,16,0xf5f5dc);
-    case 'bowl_soup':{const g=new THREE.Group();g.add(mkCyl(0.22,0.17,0.14,16,0xf5f5dc));const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.012,16),mat(0xb05020,0.8));s.position.y=0.065;g.add(s);return g;}
+    case 'bowl_empty':    return mkCyl(0.19,0.15,0.12,16,0xf5f5dc);
+    case 'bowl_soup':{const g=new THREE.Group();g.add(mkCyl(0.19,0.15,0.12,16,0xf5f5dc));const s=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.010,16),mat(0xb05020,0.8));s.position.y=0.056;g.add(s);return g;}
     case 'bowl_soup_noodle':{
-      const g=new THREE.Group();g.add(mkCyl(0.22,0.17,0.14,16,0xf5f5dc));
-      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.012,16),mat(0xb05020,0.8));s.position.y=0.065;g.add(s);
-      const n=mkCyl(0.13,0.13,0.045,10,0xf7c84a);n.position.y=0.095;g.add(n);return g;}
+      const g=new THREE.Group();g.add(mkCyl(0.19,0.15,0.12,16,0xf5f5dc));
+      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.010,16),mat(0xb05020,0.8));s.position.y=0.056;g.add(s);
+      const n=mkCyl(0.10,0.10,0.038,10,0xf7c84a);n.position.y=0.080;g.add(n);return g;}
     case 'bowl_negi':{
-      const g=new THREE.Group();g.add(mkCyl(0.22,0.17,0.14,16,0xf5f5dc));
-      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.012,16),mat(0xb05020,0.8));s.position.y=0.065;g.add(s);
-      const n=mkCyl(0.13,0.13,0.045,10,0xf7c84a);n.position.y=0.095;g.add(n);
-      const ng=mkBox(0.025,0.14,0.025,0x3cb371);ng.position.set(0.09,0.12,0.06);g.add(ng);return g;}
+      const g=new THREE.Group();g.add(mkCyl(0.19,0.15,0.12,16,0xf5f5dc));
+      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.010,16),mat(0xb05020,0.8));s.position.y=0.056;g.add(s);
+      const n=mkCyl(0.10,0.10,0.038,10,0xf7c84a);n.position.y=0.080;g.add(n);
+      const ng=mkBox(0.020,0.11,0.020,0x3cb371);ng.position.set(0.076,0.10,0.050);g.add(ng);return g;}
     case 'bowl_chashu':{
-      const g=new THREE.Group();g.add(mkCyl(0.22,0.17,0.14,16,0xf5f5dc));
-      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.012,16),mat(0xb05020,0.8));s.position.y=0.065;g.add(s);
-      const n=mkCyl(0.13,0.13,0.045,10,0xf7c84a);n.position.y=0.095;g.add(n);
-      const ch=mkCyl(0.07,0.07,0.03,8,0x8B2500);ch.position.set(0.08,0.12,0.06);g.add(ch);return g;}
+      const g=new THREE.Group();g.add(mkCyl(0.19,0.15,0.12,16,0xf5f5dc));
+      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.010,16),mat(0xb05020,0.8));s.position.y=0.056;g.add(s);
+      const n=mkCyl(0.10,0.10,0.038,10,0xf7c84a);n.position.y=0.080;g.add(n);
+      const ch=mkCyl(0.058,0.058,0.025,8,0x8B2500);ch.position.set(0.070,0.10,0.050);g.add(ch);return g;}
     case 'bowl_both':{
-      const g=new THREE.Group();g.add(mkCyl(0.22,0.17,0.14,16,0xf5f5dc));
-      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.012,16),mat(0xb05020,0.8));s.position.y=0.065;g.add(s);
-      const n=mkCyl(0.13,0.13,0.045,10,0xf7c84a);n.position.y=0.095;g.add(n);
-      const ch=mkCyl(0.07,0.07,0.03,8,0x8B2500);ch.position.set(0.08,0.12,0.06);g.add(ch);
-      const ng=mkBox(0.025,0.14,0.025,0x3cb371);ng.position.set(-0.06,0.175,-0.05);g.add(ng);return g;}
+      const g=new THREE.Group();g.add(mkCyl(0.19,0.15,0.12,16,0xf5f5dc));
+      const s=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.010,16),mat(0xb05020,0.8));s.position.y=0.056;g.add(s);
+      const n=mkCyl(0.10,0.10,0.038,10,0xf7c84a);n.position.y=0.080;g.add(n);
+      const ch=mkCyl(0.058,0.058,0.025,8,0x8B2500);ch.position.set(0.070,0.10,0.050);g.add(ch);
+      const ng=mkBox(0.020,0.11,0.020,0x3cb371);ng.position.set(-0.050,0.14,-0.040);g.add(ng);return g;}
     case 'bowl_all': return makeHandRamen();
-    default: return mkBox(0.2,0.2,0.2,0xf5c842);
+    case 'chahan_cooking':{
+      // 炒め中：中華鍋を持っているイメージ
+      const g=new THREE.Group();
+      const wok=mkCyl(0.18,0.13,0.11,14,0x333333,0.3,0.6);
+      wok.position.y=0.05; g.add(wok);
+      const rice=mkCyl(0.14,0.14,0.04,12,0xfffacd,0.8);
+      rice.position.y=0.10; g.add(rice);
+      return g;}
+    case 'chahan_complete': return makeFallbackChahan();
+    default: return mkBox(0.18,0.18,0.18,0xf5c842);
   }
 }
 function makeHandRamen(){
   const g=new THREE.Group();
-  const b=mkCyl(0.24,0.19,0.16,16,0xf5f5dc);b.position.y=0.08;g.add(b);
-  const s=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.012,16),mat(0xb05020,0.8));
-  s.position.y=0.148;g.add(s);
-  const n=mkCyl(0.14,0.14,0.05,10,0xf7c84a);n.position.y=0.165;g.add(n);
-  const ch=mkCyl(0.07,0.07,0.03,8,0x8B2500);ch.position.set(0.08,0.17,0.06);g.add(ch);
-  const ng=mkBox(0.025,0.11,0.025,0x3cb371);ng.position.set(-0.06,0.175,-0.05);g.add(ng);
+  const b=mkCyl(0.21,0.17,0.14,16,0xf5f5dc);b.position.y=0.07;g.add(b);
+  const s=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.010,16),mat(0xb05020,0.8));
+  s.position.y=0.134;g.add(s);
+  const n=mkCyl(0.12,0.12,0.044,10,0xf7c84a);n.position.y=0.148;g.add(n);
+  const ch=mkCyl(0.058,0.058,0.025,8,0x8B2500);ch.position.set(0.070,0.155,0.052);g.add(ch);
+  const ng=mkBox(0.020,0.096,0.020,0x3cb371);ng.position.set(-0.050,0.158,-0.042);g.add(ng);
   return g;
 }
 function setHandItem(type){
   if(handMesh){scene.remove(handMesh);handMesh=null;}
   handItem=type;
-  if(type==='empty' || type==='boiled_noodle') return;
+  if(type==='empty'||type==='boiled_noodle') return;
   handMesh=makeHandMesh(type);
   if(handMesh) scene.add(handMesh);
 }
@@ -1584,7 +1573,7 @@ function setHandItem(type){
 // コイン
 // ================================================================
 function makeCoin(x,y,z){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(0.28,0.07,0.28),mat(0xf5c842,0.22,0.92));
+  const m=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.060,0.24),mat(0xf5c842,0.22,0.92));
   m.position.set(x,y,z);m.userData.isCoin=true;return m;
 }
 
@@ -1604,11 +1593,21 @@ function spawnCustomer(){
   mesh.updateMatrixWorld(true);
   const bb=new THREE.Box3().setFromObject(mesh);
   const groundOffset=-bb.min.y;
-  mesh.position.set(-ROOM_W*0.38,groundOffset,SPAWN_Z);
+  mesh.position.set(-ROOM_W*0.36,groundOffset,SPAWN_Z);
   mesh.rotation.y=0;
   scene.add(mesh);
 
-  const orderKey=ORDER_KEYS[Math.floor(Math.random()*ORDER_KEYS.length)];
+  // チャーハンが有効な場合は4種類から選ぶ、それ以外はラーメン3種
+  const orderKeys = chahanEnabled
+    ? [...RAMEN_ORDER_KEYS,'CHAHAN']
+    : RAMEN_ORDER_KEYS;
+  // チャーハン注文確率は20%に抑える（chahanEnabled時）
+  let orderKey;
+  if(chahanEnabled && Math.random()<0.20){
+    orderKey='CHAHAN';
+  } else {
+    orderKey=RAMEN_ORDER_KEYS[Math.floor(Math.random()*RAMEN_ORDER_KEYS.length)];
+  }
   const orderType=ORDER_TYPES[orderKey];
 
   const speechEl=document.createElement('div');
@@ -1626,7 +1625,7 @@ function spawnCustomer(){
   if(ramenPrice>=36&&Math.random()<0.4){
     const c=customers[customers.length-1];
     setTimeout(()=>{
-      if(c.state==='waiting'){
+      if(c.state==='waiting'&&!c.orderType.isChahan){
         if(c.speechEl){c.speechEl.className='speech-bubble angry';c.speechEl.textContent='😡 高すぎる！帰る！';}
         showToast('😡 お客さんが「高すぎる！」と帰ってしまった！',3000);
         setTimeout(()=>removeCustomer(c),1800);
@@ -1650,7 +1649,7 @@ function makeRamenForCounter(x,y,z){
     const bb=new THREE.Box3().setFromObject(ramen);
     const sz=new THREE.Vector3();bb.getSize(sz);
     const maxD=Math.max(sz.x,sz.z);
-    const sc=maxD>0?0.34/maxD:1;
+    const sc=maxD>0?0.28/maxD:1;
     ramen.scale.set(sc,sc,sc);
     const bb2=new THREE.Box3().setFromObject(ramen);
     ramen.position.set(x,y-bb2.min.y,z);
@@ -1667,7 +1666,154 @@ function matchesOrder(orderKey,hasNegi,hasChashu){
 }
 
 // ================================================================
-// UI
+// 購入・投資
+// ================================================================
+window.buyRecipe=function(){
+  if(chahanRecipeUnlocked){ showToast('✅ レシピは既に解放済みです',2000); closeOrderModal(); return; }
+  if(money<200){ showToast('💸 所持金が足りません！（$200必要）',2500); return; }
+  money-=200; dayPurchaseCost+=200;
+  chahanRecipeUnlocked=true;
+  document.getElementById('recipe-btn').disabled=true;
+  document.getElementById('recipe-btn').textContent='解放済';
+  document.getElementById('recipe-status').textContent='✅ 解放済';
+  document.getElementById('recipe-item').classList.add('unlocked');
+  checkChahanEnabled();
+  showToast('📖 極上チャーハンのレシピを解放！次は調理台を購入しよう',4000);
+  updateUI(); closeOrderModal();
+};
+
+window.buyChahataTai=function(){
+  if(chahataTaiPlaced){ showToast('✅ 調理台は既に設置済みです',2000); closeOrderModal(); return; }
+  if(money<500){ showToast('💸 所持金が足りません！（$500必要）',2500); return; }
+  money-=500; dayPurchaseCost+=500;
+  chahataTaiPlaced=true;
+  document.getElementById('chahata-btn').disabled=true;
+  document.getElementById('chahata-btn').textContent='設置済';
+  document.getElementById('chahata-status').textContent='✅ 設置済';
+  document.getElementById('chahata-item').classList.add('unlocked');
+  // Chahata.glb の配置（GLTFLoader がある場合はロード、なければフォールバック）
+  placeChahataTai();
+  checkChahanEnabled();
+  showToast('🍳 炒飯用調理台を設置！レシピも揃えば極上チャーハン開始！',4000);
+  updateUI(); closeOrderModal();
+};
+
+function placeChahataTai(){
+  if(fallbackStations.chahata){ scene.remove(fallbackStations.chahata); fallbackStations.chahata=null; }
+  if(chahataTaiWrapper){ scene.remove(chahataTaiWrapper); chahataTaiWrapper=null; }
+
+  if(typeof THREE.GLTFLoader!=='undefined'){
+    const loader=new THREE.GLTFLoader();
+    loader.load('./Chahata.glb',
+      gltf=>{
+        chahataTaiWrapper=placeGLBOverFallback(
+          gltf.scene, CHAHATA_POS, 2.2, null, Math.PI/2, UNIFORM_KITCHEN_SCALE
+        );
+        showToast('🍳 炒飯台（GLBモデル）を設置！',2000);
+      },
+      null,
+      _=>{
+        // フォールバック
+        chahataTaiWrapper=buildFallbackChahataTai(CHAHATA_POS);
+      }
+    );
+  } else {
+    chahataTaiWrapper=buildFallbackChahataTai(CHAHATA_POS);
+  }
+}
+
+function checkChahanEnabled(){
+  const prev=chahanEnabled;
+  chahanEnabled=chahanRecipeUnlocked&&chahataTaiPlaced;
+  if(!prev&&chahanEnabled){
+    showToast('🎉 極上チャーハンの提供が可能になりました！',4000);
+  }
+}
+
+window.buyItem=function(key){
+  const def=ITEM_DEF[key];
+  if(!def){ showToast('不明な商品'); return; }
+  if(money<def.price){ showToast('💸 お金が足りません！'); return; }
+  money-=def.price; dayPurchaseCost+=def.price;
+  const boxMesh=makeCardboardBox(key);
+  const offset=deliveryBoxes.length;
+  const bx=DELIVERY_POS.x+(offset%3-1)*0.58;
+  const bz=DELIVERY_POS.z+Math.floor(offset/3)*0.52;
+  boxMesh.position.set(bx,0,bz);
+  scene.add(boxMesh);
+  deliveryBoxes.push({type:key,mesh:boxMesh});
+  closeOrderModal();
+  showDeliveryNotice(`📦 ${def.label}が届いた！配達エリアへ`);
+  showToast(`✅ ${def.label}を発注！配達エリアを確認！`,2500);
+  updateUI();
+};
+
+function openOrderModal(){
+  orderModalOpen=true;
+  document.getElementById('price-display').textContent='$'+ramenPrice;
+  document.getElementById('modal-money').textContent=`$${money}`;
+  ['men','negi','chashu','soup'].forEach(k=>{
+    document.getElementById('s-'+k).textContent=shelfStock[k];
+    document.getElementById('t-'+k).textContent=stock[k];
+  });
+  // 投資ボタン状態更新
+  const rBtn=document.getElementById('recipe-btn');
+  const cBtn=document.getElementById('chahata-btn');
+  if(chahanRecipeUnlocked){ rBtn.disabled=true; rBtn.textContent='解放済'; document.getElementById('recipe-status').textContent='✅ 解放済'; }
+  else { rBtn.disabled=false; rBtn.textContent='$200'; document.getElementById('recipe-status').textContent='未解放'; }
+  if(chahataTaiPlaced){ cBtn.disabled=true; cBtn.textContent='設置済'; document.getElementById('chahata-status').textContent='✅ 設置済'; }
+  else { cBtn.disabled=false; cBtn.textContent='$500'; document.getElementById('chahata-status').textContent='未購入'; }
+  updatePriceUI();
+  document.getElementById('order-modal').classList.add('active');
+}
+function closeOrderModal(){
+  orderModalOpen=false;
+  document.getElementById('order-modal').classList.remove('active');
+}
+window.closeOrderModal=closeOrderModal;
+
+// ================================================================
+// チャーハン調理
+// ================================================================
+window.doChahanStep=function(){
+  if(chahanStep!==CHAHAN_STEPS.COOKING) return;
+  chahanLeft--;
+  document.getElementById('chahan-count').textContent=chahanLeft;
+  showToast('ジャッジャッ！🍳',500);
+  if(chahanLeft<=0){
+    chahanStep=CHAHAN_STEPS.COMPLETE;
+    document.getElementById('chahanbtn').style.display='none';
+    setHandItem('chahan_complete');
+    showToast('✅ 極上チャーハン完成！カウンターをタップ',2800);
+    updateUI();
+  }
+};
+
+// ================================================================
+// 湯切り
+// ================================================================
+window.doYukiri=function(){
+  if(cookStep!==STEPS.YUKIRI_WAIT) return;
+  if(handMesh){ scene.remove(handMesh); handMesh=null; }
+  handItem='empty';
+  yukiriLeft--;
+  document.getElementById('yukiri-count').textContent=yukiriLeft;
+  triggerYukiriAnim();
+  showToast('シャッシャッ！',600);
+  if(yukiriLeft<=0){
+    cookStep=STEPS.NOODLE_READY; yukiriLeft=3;
+    document.getElementById('yukiri-btn').style.display='none';
+    setTimeout(hideTebbo,400);
+    setHandItem('boiled_noodle');
+    stopBoilingVisuals();
+    switchNabePot('yukiri');
+    showToast('✅ 麺の湯切り完了！丼を取りに行こう',2500);
+    updateCookingUI(); updateUI();
+  }
+};
+
+// ================================================================
+// UI 更新
 // ================================================================
 function updateTimerUI(){
   const el=document.getElementById('timer-val');
@@ -1679,13 +1825,12 @@ function updateTimerUI(){
   else el.classList.remove('danger');
   document.getElementById('day-label').textContent=`Day ${currentDay}`;
 }
-
 function showDayResult(){
-  gameRunning=false;dayActive=false;
+  gameRunning=false; dayActive=false;
   const profit=daySales-dayPurchaseCost;
   document.getElementById('result-day-label').textContent=`Day ${currentDay} の結果`;
   document.getElementById('res-customers').textContent=`${dayCustomers}人`;
-  document.getElementById('res-price').textContent=`$${ramenPrice}`;
+  document.getElementById('res-price').textContent=`$${ramenPrice}（チャーハン $${CHAHAN_PRICE}固定）`;
   document.getElementById('res-sales').textContent=`$${daySales}`;
   document.getElementById('res-cost').textContent=`$${dayPurchaseCost}`;
   const profEl=document.getElementById('res-profit');
@@ -1694,24 +1839,24 @@ function showDayResult(){
   document.getElementById('next-day-num').textContent=currentDay+1;
   document.getElementById('result-overlay').classList.add('active');
 }
-
 window.nextDay=function(){
   currentDay++;
-  dayTimer=300.0;daySales=0;dayRamenMade=0;dayCustomers=0;dayPurchaseCost=0;
-  dayActive=true;gameRunning=true;
-  cookStep=STEPS.IDLE;handItem='empty';carryingBox=null;carryingRefill=null;
-  if(handMesh){scene.remove(handMesh);handMesh=null;}
+  dayTimer=300.0; daySales=0; dayRamenMade=0; dayCustomers=0; dayPurchaseCost=0;
+  dayActive=true; gameRunning=true;
+  cookStep=STEPS.IDLE; handItem='empty'; carryingBox=null; carryingRefill=null;
+  chahanStep=CHAHAN_STEPS.IDLE; chahanLeft=5;
+  if(handMesh){ scene.remove(handMesh); handMesh=null; }
   hideTebbo();
-  // 鍋を通常状態に戻す
   switchNabePot('normal');
   stopBoilingVisuals();
-  customers.forEach(c=>{scene.remove(c.mesh);if(c.speechEl)c.speechEl.remove();});
-  customers=[];readyRamenQueue=[];readyRamen=0;
-  bowlHasNegi=false;bowlHasChashu=false;customerTimer=0;
+  customers.forEach(c=>{ scene.remove(c.mesh); if(c.speechEl) c.speechEl.remove(); });
+  customers=[]; readyRamenQueue=[]; readyRamen=0;
+  bowlHasNegi=false; bowlHasChashu=false; customerTimer=0;
   nextCustomerInterval=getCustomerInterval();
-  deliveryBoxes.forEach(b=>scene.remove(b.mesh));deliveryBoxes=[];
+  deliveryBoxes.forEach(b=>scene.remove(b.mesh)); deliveryBoxes=[];
   document.getElementById('result-overlay').classList.remove('active');
-  updateTimerUI();updateUI();updatePriceUI();
+  document.getElementById('chahanbtn').style.display='none';
+  updateTimerUI(); updateUI(); updatePriceUI();
   showToast(`☀️ Day ${currentDay} 開店！頑張ろう！`,3000);
   setTimeout(spawnCustomer,1500);
 };
@@ -1725,7 +1870,7 @@ function updateUI(){
   document.getElementById('ramen-ready').textContent=readyRamen;
 
   let carryLabel='なし';
-  if(carryingBox)    carryLabel=`📦 ${carryingBox.type}の段ボール`;
+  if(carryingBox)       carryLabel=`📦 ${carryingBox.type}の段ボール`;
   else if(carryingRefill) carryLabel=`🔄 ${refillLabel(carryingRefill.type)}の補充食材`;
   else if(handItem!=='empty') carryLabel=handItemLabel(handItem);
   document.getElementById('carry-text').textContent=carryLabel;
@@ -1744,54 +1889,62 @@ function updateUI(){
 
   const badge=document.getElementById('order-type-badge');
   const waitC=customers.find(c=>c.state==='waiting');
-  if(waitC){badge.style.display='block';document.getElementById('order-type-text').textContent=`${waitC.orderType.emoji}${waitC.orderType.name}`;}
-  else{badge.style.display='none';}
+  if(waitC){ badge.style.display='block'; document.getElementById('order-type-text').textContent=`${waitC.orderType.emoji}${waitC.orderType.name}`; }
+  else{ badge.style.display='none'; }
 
   const obj=document.getElementById('obj-text');
-  if(deliveryBoxes.length>0&&!carryingBox&&cookStep===STEPS.IDLE){obj.textContent='📦 配達エリアの段ボールを棚に収納しよう！';return;}
-  if(carryingBox){obj.textContent='🏪 在庫棚へ運ぼう！（棚をタップ）';return;}
-  if(carryingRefill){obj.textContent=`🔄 ${refillLabel(carryingRefill.type)}を調理台にチャージ！`;return;}
+  if(deliveryBoxes.length>0&&!carryingBox&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){ obj.textContent='📦 配達エリアの段ボールを棚に収納しよう！'; return; }
+  if(carryingBox){ obj.textContent='🏪 在庫棚へ運ぼう！（棚をタップ）'; return; }
+  if(carryingRefill){ obj.textContent=`🔄 ${refillLabel(carryingRefill.type)}を調理台にチャージ！`; return; }
+
+  // チャーハン優先表示
+  if(chahanStep===CHAHAN_STEPS.COOKING){ obj.textContent=`🍳 炒めボタンを${chahanLeft}回タップ！`; return; }
+  if(chahanStep===CHAHAN_STEPS.COMPLETE){ obj.textContent='✅ カウンターをタップ→チャーハン提供！'; return; }
+
   const paidC=customers.some(c=>c.state==='paid');
   const hasStock=stock.men>0&&stock.soup>0;
-  if(paidC){obj.textContent='💰 カウンター近くで金貨をタップ！';return;}
-  if(readyRamen>0&&waitC){obj.textContent='🍜 カウンターをタップ→提供！';return;}
+  if(paidC){ obj.textContent='💰 カウンター近くで金貨をタップ！'; return; }
+  if(readyRamen>0&&waitC){ obj.textContent='🍜 カウンターをタップ→提供！'; return; }
   switch(cookStep){
     case STEPS.IDLE:
       if(!hasStock) obj.textContent='🖥️ PCで食材発注→配達→棚→調理台の順で補充！';
+      else if(waitC&&waitC.orderType.isChahan&&chahanEnabled) obj.textContent='🍳 炒飯台に行ってチャーハンを作ろう！';
       else if(waitC) obj.textContent='🍜 ①麺スペースへ→調理スタート！';
       else obj.textContent='⏳ お客さんを待とう…';
       break;
-    case STEPS.HAVE_RAW:    obj.textContent='🫕 ②鍋スペースへ→麺を投入！';break;
-    case STEPS.BOILING:     obj.textContent='⏳ 茹で中… 3秒待とう';break;
-    case STEPS.BOILED_WAIT: obj.textContent='🥢 ②鍋スペースをタップ→麺を上げる';break;
-    case STEPS.YUKIRI_WAIT: obj.textContent='💦 湯切りボタンを3回連打！';break;
-    case STEPS.NOODLE_READY:obj.textContent='🥣 カウンターへ→空の丼を取る';break;
-    case STEPS.HAVE_BOWL:   obj.textContent='🍵 ②鍋スペースへ→スープを注ぐ';break;
-    case STEPS.BOWL_SOUP:   obj.textContent='🍜 ②鍋スペース再タップ→麺を投入';break;
+    case STEPS.HAVE_RAW:    obj.textContent='🫕 ②鍋スペースへ→麺を投入！'; break;
+    case STEPS.BOILING:     obj.textContent='⏳ 茹で中… 3秒待とう'; break;
+    case STEPS.BOILED_WAIT: obj.textContent='🥢 ②鍋スペースをタップ→麺を上げる'; break;
+    case STEPS.YUKIRI_WAIT: obj.textContent='💦 湯切りボタンを3回連打！'; break;
+    case STEPS.NOODLE_READY:obj.textContent='🥣 カウンターへ→空の丼を取る'; break;
+    case STEPS.HAVE_BOWL:   obj.textContent='🍵 ②鍋スペースへ→スープを注ぐ'; break;
+    case STEPS.BOWL_SOUP:   obj.textContent='🍜 ②鍋スペース再タップ→麺を投入'; break;
     case STEPS.BOWL_NOODLE:{
-      if(waitC){
+      if(waitC&&!waitC.orderType.isChahan){
         const ot=waitC.orderType;
         const hint=[];
-        if(ot.needNegi)   hint.push('🌿ネギ');
+        if(ot.needNegi) hint.push('🌿ネギ');
         if(ot.needChashu) hint.push('🥩チャーシュー');
         obj.textContent=`注文「${ot.name}」→ ${hint.join('・')}を追加`;
       } else obj.textContent='🌿③ネギ or ④チャーシュースペースへ';
-      break;}
-    case STEPS.BOWL_NEGI:   obj.textContent='🥩 ④チャーシュー or 完成→カウンターへ';break;
-    case STEPS.BOWL_CHASHU: obj.textContent='🌿 ③ネギ or 完成→カウンターへ';break;
+      break;
+    }
+    case STEPS.BOWL_NEGI:   obj.textContent='🥩 ④チャーシュー or 完成→カウンターへ'; break;
+    case STEPS.BOWL_CHASHU: obj.textContent='🌿 ③ネギ or 完成→カウンターへ'; break;
     case STEPS.BOWL_BOTH:
-    case STEPS.RAMEN_COMPLETE: obj.textContent='✅ カウンターをタップ→完成提供！';break;
-    default: obj.textContent='';break;
+    case STEPS.RAMEN_COMPLETE: obj.textContent='✅ カウンターをタップ→完成提供！'; break;
+    default: obj.textContent=''; break;
   }
 }
 
-function refillLabel(t){return{men:'麺',negi:'ネギ',chashu:'チャーシュー',soup:'スープ'}[t]||t;}
+function refillLabel(t){ return{men:'麺',negi:'ネギ',chashu:'チャーシュー',soup:'スープ'}[t]||t; }
 function handItemLabel(t){
   const M={
     raw_noodle:'生麺',boiled_noodle:'茹で麺',bowl_empty:'空の丼',
     bowl_soup:'スープ入り丼',bowl_soup_noodle:'麺＋スープ丼',
     bowl_negi:'ネギ乗せ丼',bowl_chashu:'チャーシュー丼',
-    bowl_both:'ネギ＋チャーシュー丼',bowl_all:'完成ラーメン！'
+    bowl_both:'ネギ＋チャーシュー丼',bowl_all:'完成ラーメン！',
+    chahan_cooking:'チャーハン炒め中🍳',chahan_complete:'極上チャーハン🍳✅'
   };
   return M[t]||t;
 }
@@ -1799,95 +1952,37 @@ function handItemLabel(t){
 function updateCookingUI(){
   const ui=document.getElementById('cooking-ui');
   const yukBtn=document.getElementById('yukiri-btn');
+  const chaBtn=document.getElementById('chahanbtn');
   if(cookStep===STEPS.BOILING){
-    ui.style.display='block';ui.textContent='⏳ 茹で中…';
-    yukBtn.style.display='none';
+    ui.style.display='block'; ui.textContent='⏳ 茹で中…';
+    yukBtn.style.display='none'; chaBtn.style.display='none';
   } else if(cookStep===STEPS.YUKIRI_WAIT){
-    ui.style.display='block';ui.textContent='💦 湯切りしてください！';
-    yukBtn.style.display='block';
+    ui.style.display='block'; ui.textContent='💦 湯切りしてください！';
+    yukBtn.style.display='block'; chaBtn.style.display='none';
     document.getElementById('yukiri-count').textContent=yukiriLeft;
+  } else if(chahanStep===CHAHAN_STEPS.COOKING){
+    ui.style.display='block'; ui.textContent='🍳 炒めてください！';
+    chaBtn.style.display='block'; yukBtn.style.display='none';
+    document.getElementById('chahan-count').textContent=chahanLeft;
   } else {
-    ui.style.display='none';yukBtn.style.display='none';
+    ui.style.display='none'; yukBtn.style.display='none'; chaBtn.style.display='none';
   }
 }
 
 let toastTimer;
 function showToast(msg,dur=2300){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
+  t.textContent=msg; t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>t.classList.remove('show'),dur);
 }
-
 let deliveryNoticeTimer;
 function showDeliveryNotice(msg='📦 配達エリアに段ボールが届いた！'){
   const el=document.getElementById('delivery-notice');
-  el.textContent=msg;el.classList.add('show');
+  el.textContent=msg; el.classList.add('show');
   clearTimeout(deliveryNoticeTimer);
   deliveryNoticeTimer=setTimeout(()=>el.classList.remove('show'),3500);
 }
-
-// ================================================================
-// 購入
-// ================================================================
-window.buyItem=function(key){
-  const def=ITEM_DEF[key];
-  if(!def){showToast('不明な商品');return;}
-  if(money<def.price){showToast('💸 お金が足りません！');return;}
-  money-=def.price;dayPurchaseCost+=def.price;
-  const boxMesh=makeCardboardBox(key);
-  const offset=deliveryBoxes.length;
-  const bx=DELIVERY_POS.x+(offset%3-1)*0.68;
-  const bz=DELIVERY_POS.z+Math.floor(offset/3)*0.62;
-  boxMesh.position.set(bx,0,bz);
-  scene.add(boxMesh);
-  deliveryBoxes.push({type:key,mesh:boxMesh});
-  closeOrderModal();
-  showDeliveryNotice(`📦 ${def.label}が届いた！配達エリアへ`);
-  showToast(`✅ ${def.label}を発注！配達エリアを確認！`,2500);
-  updateUI();
-};
-
-function openOrderModal(){
-  orderModalOpen=true;
-  document.getElementById('price-display').textContent='$'+ramenPrice;
-  document.getElementById('modal-money').textContent=`$${money}`;
-  ['men','negi','chashu','soup'].forEach(k=>{
-    document.getElementById('s-'+k).textContent=shelfStock[k];
-    document.getElementById('t-'+k).textContent=stock[k];
-  });
-  updatePriceUI();
-  document.getElementById('order-modal').classList.add('active');
-}
-function closeOrderModal(){
-  orderModalOpen=false;
-  document.getElementById('order-modal').classList.remove('active');
-}
-window.closeOrderModal=closeOrderModal;
-
-// ================================================================
-// 湯切り
-// ================================================================
-window.doYukiri=function(){
-  if(cookStep!==STEPS.YUKIRI_WAIT) return;
-  if(handMesh){ scene.remove(handMesh); handMesh=null; }
-  handItem='empty';
-  yukiriLeft--;
-  document.getElementById('yukiri-count').textContent=yukiriLeft;
-  triggerYukiriAnim();
-  showToast('シャッシャッ！',600);
-  if(yukiriLeft<=0){
-    cookStep=STEPS.NOODLE_READY;yukiriLeft=3;
-    document.getElementById('yukiri-btn').style.display='none';
-    setTimeout(hideTebbo,400);
-    setHandItem('boiled_noodle');
-    stopBoilingVisuals();
-    // ★ 湯切り完了 → waternabe を非表示、nabe を表示
-    switchNabePot('yukiri');
-    showToast('✅ 麺の湯切り完了！丼を取りに行こう',2500);
-    updateCookingUI();updateUI();
-  }
-};
 
 // ================================================================
 // アクション
@@ -1903,55 +1998,56 @@ function doAction(){
   const paidC=customers.find(c=>c.coinMesh&&c.state==='paid');
   if(paidC){
     const ctD=flat.distanceTo(new THREE.Vector3(COUNTER_POS.x,0,COUNTER_POS.z));
-    if(ctD<3.5){
-      money+=ramenPrice;daySales+=ramenPrice;customersServed++;dayCustomers++;
-      scene.remove(paidC.coinMesh);paidC.coinMesh=null;
-      showToast(`💰 +$${ramenPrice} ありがとう！`);
-      removeCustomer(paidC);updateUI();return;
+    if(ctD<2.8){
+      const earned=paidC.orderType.isChahan?CHAHAN_PRICE:ramenPrice;
+      money+=earned; daySales+=earned; customersServed++; dayCustomers++;
+      scene.remove(paidC.coinMesh); paidC.coinMesh=null;
+      showToast(`💰 +$${earned} ありがとう！`);
+      removeCustomer(paidC); updateUI(); return;
     }
   }
 
   // [B] PC発注
   const pcD=flat.distanceTo(new THREE.Vector3(PC_POS.x,0,PC_POS.z));
-  if(pcD<3.2){openOrderModal();return;}
+  if(pcD<2.6){ openOrderModal(); return; }
 
   // [C] 段ボールを手に取る
-  if(!carryingBox&&!carryingRefill&&cookStep===STEPS.IDLE&&handItem==='empty'){
+  if(!carryingBox&&!carryingRefill&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){
     const delivD=flat.distanceTo(new THREE.Vector3(DELIVERY_POS.x,0,DELIVERY_POS.z));
-    if(delivD<3.8&&deliveryBoxes.length>0){
+    if(delivD<3.0&&deliveryBoxes.length>0){
       const box=deliveryBoxes[deliveryBoxes.length-1];
       carryingBox=box;
       scene.remove(box.mesh);
       deliveryBoxes=deliveryBoxes.filter(b=>b!==box);
       setHandItem('cardboard');
       showToast(`📦 ${ITEM_DEF[box.type]?.label}の段ボールを持った！棚へ運ぼう`,2500);
-      updateUI();return;
+      updateUI(); return;
     }
   }
 
   // [D] 棚へ段ボールを収納
   const shelfD=flat.distanceTo(new THREE.Vector3(SHELF_POS.x,0,SHELF_POS.z));
-  if(carryingBox&&shelfD<3.2){
+  if(carryingBox&&shelfD<2.5){
     const type=carryingBox.type;
     shelfStock[type]++;
-    carryingBox=null;setHandItem('empty');
+    carryingBox=null; setHandItem('empty');
     showToast(`✅ 棚に収納！${refillLabel(type)}が${shelfStock[type]}個`,2500);
-    updateUI();return;
+    updateUI(); return;
   }
 
   // [E] 棚から補充食材を取り出す
-  if(!carryingBox&&!carryingRefill&&cookStep===STEPS.IDLE&&handItem==='empty'){
-    if(shelfD<3.2){
+  if(!carryingBox&&!carryingRefill&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){
+    if(shelfD<2.5){
       const candidates=['men','negi','chashu','soup'].filter(t=>shelfStock[t]>0);
-      if(candidates.length===0){showToast('⚠️ 棚に在庫がありません！PCで発注してください',2500);return;}
+      if(candidates.length===0){ showToast('⚠️ 棚に在庫がありません！PCで発注してください',2500); return; }
       let chosen=null,minStock=Infinity;
-      candidates.forEach(t=>{if(stock[t]<minStock){minStock=stock[t];chosen=t;}});
+      candidates.forEach(t=>{ if(stock[t]<minStock){ minStock=stock[t]; chosen=t; } });
       if(!chosen) chosen=candidates[0];
       carryingRefill={type:chosen};
       shelfStock[chosen]--;
       setHandItem(`refill_${chosen}`);
       showToast(`🔄 ${refillLabel(chosen)}補充用を持った！調理台へ運ぼう`,2500);
-      updateUI();return;
+      updateUI(); return;
     }
   }
 
@@ -1960,145 +2056,187 @@ function doAction(){
     const type=carryingRefill.type;
     const targetPos=type==='men'?NOODLE_SPACE:type==='soup'?POT_SPACE:type==='chashu'?CHASHU_SPACE:NEGI_SPACE;
     const d=flat.distanceTo(new THREE.Vector3(targetPos.x,0,targetPos.z));
-    if(d<3.2){
+    if(d<2.5){
       stock[type]+=SHELF_TO_TABLE[type];
-      carryingRefill=null;setHandItem('empty');
+      carryingRefill=null; setHandItem('empty');
       showToast(`✅ ${refillLabel(type)}調理台に${SHELF_TO_TABLE[type]}回分チャージ完了！`,2500);
-      updateUI();return;
+      updateUI(); return;
     }
     const allSpaces=[NOODLE_SPACE,POT_SPACE,CHASHU_SPACE,NEGI_SPACE];
-    if(allSpaces.some(sp=>flat.distanceTo(new THREE.Vector3(sp.x,0,sp.z))<3.0)){
-      showToast(`⚠️ ${refillLabel(type)}は別の調理台に補充してください`,2000);return;
+    if(allSpaces.some(sp=>flat.distanceTo(new THREE.Vector3(sp.x,0,sp.z))<2.2)){
+      showToast(`⚠️ ${refillLabel(type)}は別の調理台に補充してください`,2000); return;
     }
   }
 
   if(carryingBox||carryingRefill) return;
 
-  const nd  =flat.distanceTo(new THREE.Vector3(NOODLE_SPACE.x,0,NOODLE_SPACE.z));
-  const pd  =flat.distanceTo(new THREE.Vector3(POT_SPACE.x,   0,POT_SPACE.z));
-  const cd  =flat.distanceTo(new THREE.Vector3(CHASHU_SPACE.x,0,CHASHU_SPACE.z));
-  const gd  =flat.distanceTo(new THREE.Vector3(NEGI_SPACE.x,  0,NEGI_SPACE.z));
-  const ctD2=flat.distanceTo(new THREE.Vector3(COUNTER_POS.x, 0,COUNTER_POS.z));
+  const nd   = flat.distanceTo(new THREE.Vector3(NOODLE_SPACE.x, 0, NOODLE_SPACE.z));
+  const pd   = flat.distanceTo(new THREE.Vector3(POT_SPACE.x,    0, POT_SPACE.z));
+  const cd   = flat.distanceTo(new THREE.Vector3(CHASHU_SPACE.x, 0, CHASHU_SPACE.z));
+  const gd   = flat.distanceTo(new THREE.Vector3(NEGI_SPACE.x,   0, NEGI_SPACE.z));
+  const ctD2 = flat.distanceTo(new THREE.Vector3(COUNTER_POS.x,  0, COUNTER_POS.z));
 
+  // チャーハン調理フロー（Chahata台の近くでアクション）
+  if(chahanEnabled&&chahataTaiPlaced){
+    const chahataD=flat.distanceTo(new THREE.Vector3(CHAHATA_POS.x,0,CHAHATA_POS.z));
+    if(chahataD<2.8){
+      const waitC=customers.find(c=>c.state==='waiting'&&c.orderType.isChahan);
+      if(waitC&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){
+        chahanStep=CHAHAN_STEPS.COOKING; chahanLeft=5;
+        setHandItem('chahan_cooking');
+        showToast('🍳 チャーハンを炒めよう！ボタンを5回タップ！',3000);
+        updateCookingUI(); updateUI(); return;
+      }
+    }
+  }
+
+  // チャーハン完成→カウンターへ提供
+  if(chahanStep===CHAHAN_STEPS.COMPLETE&&ctD2<2.8){
+    const waitC=customers.find(c=>c.state==='waiting'&&c.orderType.isChahan);
+    if(waitC){
+      // チャーハンをカウンターに置いて提供
+      const rx=waitC.targetX;
+      const chahanObj=makeFallbackChahan();
+      chahanObj.position.set(rx,0.97,COUNTER_POS.z-0.10);
+      scene.add(chahanObj); waitC.ramenMesh=chahanObj;
+      waitC.state='eating';
+      if(waitC.speechEl) waitC.speechEl.textContent='😄 チャーハン最高！';
+      showToast('🍳 極上チャーハンを提供！');
+      chahanStep=CHAHAN_STEPS.IDLE;
+      setHandItem('empty');
+      setTimeout(()=>{
+        if(!waitC.coinMesh){
+          const coin=makeCoin(rx,1.06,COUNTER_POS.z-0.18);
+          scene.add(coin); waitC.coinMesh=coin; waitC.state='paid';
+          if(waitC.ramenMesh){ scene.remove(waitC.ramenMesh); waitC.ramenMesh=null; }
+          if(waitC.speechEl) waitC.speechEl.textContent=`💰 $${CHAHAN_PRICE}！`;
+          showToast(`💰 コインをタップ→+$${CHAHAN_PRICE}！`);
+        }
+      },2500);
+      updateCookingUI(); updateUI(); return;
+    }
+    return;
+  }
+
+  // 通常ラーメンフロー
   switch(cookStep){
     case STEPS.IDLE:
-      if(nd<3.0){
-        if(stock.men<=0){showToast('⚠️ 麺の残り0！棚から補充してください',2000);return;}
-        stock.men--;cookStep=STEPS.HAVE_RAW;setHandItem('raw_noodle');
-        showToast('🍜 生麺を掴んだ！②鍋スペースへ');updateUI();return;
+      if(nd<2.4){
+        if(stock.men<=0){ showToast('⚠️ 麺の残り0！棚から補充してください',2000); return; }
+        stock.men--; cookStep=STEPS.HAVE_RAW; setHandItem('raw_noodle');
+        showToast('🍜 生麺を掴んだ！②鍋スペースへ'); updateUI(); return;
       }
-      if(readyRamen>0&&ctD2<3.5){
-        const wc=customers.find(c=>c.state==='waiting');
+      if(readyRamen>0&&ctD2<2.8){
+        const wc=customers.find(c=>c.state==='waiting'&&!c.orderType.isChahan);
         if(wc&&readyRamenQueue.length>0){
           const nextRamen=readyRamenQueue[0];
           const ok=matchesOrder(wc.orderKey,nextRamen.hasNegi,nextRamen.hasChashu);
-          readyRamen--;readyRamenQueue.shift();
+          readyRamen--; readyRamenQueue.shift();
           if(ok){
             const rx=wc.targetX;
-            const ramen=makeRamenForCounter(rx,0.98,COUNTER_POS.z-0.12);
-            scene.add(ramen);wc.ramenMesh=ramen;wc.state='eating';
+            const ramen=makeRamenForCounter(rx,0.97,COUNTER_POS.z-0.10);
+            scene.add(ramen); wc.ramenMesh=ramen; wc.state='eating';
             if(wc.speechEl) wc.speechEl.textContent='😋 いただきます！';
-            showToast('🍜 ラーメンを提供！');dayRamenMade++;
+            showToast('🍜 ラーメンを提供！'); dayRamenMade++;
             setTimeout(()=>{
               if(!wc.coinMesh){
-                const coin=makeCoin(rx,1.08,COUNTER_POS.z-0.22);
-                scene.add(coin);wc.coinMesh=coin;wc.state='paid';
-                if(wc.ramenMesh){scene.remove(wc.ramenMesh);wc.ramenMesh=null;}
+                const coin=makeCoin(rx,1.06,COUNTER_POS.z-0.18);
+                scene.add(coin); wc.coinMesh=coin; wc.state='paid';
+                if(wc.ramenMesh){ scene.remove(wc.ramenMesh); wc.ramenMesh=null; }
                 if(wc.speechEl) wc.speechEl.textContent='💰 ありがとう！';
                 showToast(`💰 コインをタップ→+$${ramenPrice}！`);
               }
             },2800);
           } else {
-            if(wc.speechEl){wc.speechEl.className='speech-bubble angry';wc.speechEl.textContent='😡 注文と違う！';}
+            if(wc.speechEl){ wc.speechEl.className='speech-bubble angry'; wc.speechEl.textContent='😡 注文と違う！'; }
             showToast('❌ 注文と違うラーメン！お客さんが怒った…',3000);
             setTimeout(()=>removeCustomer(wc),2000);
           }
-          updateUI();return;
+          updateUI(); return;
         }
       }
       break;
     case STEPS.HAVE_RAW:
-      if(pd<3.2){
-        cookStep=STEPS.BOILING;isBoiling=true;boilTimer=3.0;setHandItem('empty');
-        // ★ 麺投入 → waternabe を表示（麺あり）、nabe を非表示
+      if(pd<2.4){
+        cookStep=STEPS.BOILING; isBoiling=true; boilTimer=3.0; setHandItem('empty');
         switchNabePot('boiling');
         startBoilingVisuals();
-        showToast('⏳ 麺を投入！3秒茹でます…');updateCookingUI();updateUI();return;
+        showToast('⏳ 麺を投入！3秒茹でます…'); updateCookingUI(); updateUI(); return;
       }
       break;
     case STEPS.BOILED_WAIT:
-      if(pd<3.2){
-        cookStep=STEPS.YUKIRI_WAIT;setHandItem('boiled_noodle');yukiriLeft=3;
+      if(pd<2.4){
+        cookStep=STEPS.YUKIRI_WAIT; setHandItem('boiled_noodle'); yukiriLeft=3;
         showTebbo();
-        showToast('💦 湯切りボタンを3回連打！');updateCookingUI();updateUI();return;
+        showToast('💦 湯切りボタンを3回連打！'); updateCookingUI(); updateUI(); return;
       }
       break;
     case STEPS.NOODLE_READY:
-      if(ctD2<3.5){cookStep=STEPS.HAVE_BOWL;setHandItem('bowl_empty');showToast('🥣 空の丼を取った！②鍋スペースへ');updateUI();return;}
+      if(ctD2<2.8){ cookStep=STEPS.HAVE_BOWL; setHandItem('bowl_empty'); showToast('🥣 空の丼を取った！②鍋スペースへ'); updateUI(); return; }
       break;
     case STEPS.HAVE_BOWL:
-      if(pd<3.2){
-        if(stock.soup<=0){showToast('⚠️ スープの残り0！棚から補充してください',2000);return;}
-        stock.soup--;cookStep=STEPS.BOWL_SOUP;setHandItem('bowl_soup');
-        showToast('🍵 スープを注いだ！もう一度②鍋タップ→麺を投入');updateUI();return;
+      if(pd<2.4){
+        if(stock.soup<=0){ showToast('⚠️ スープの残り0！棚から補充してください',2000); return; }
+        stock.soup--; cookStep=STEPS.BOWL_SOUP; setHandItem('bowl_soup');
+        showToast('🍵 スープを注いだ！もう一度②鍋タップ→麺を投入'); updateUI(); return;
       }
       break;
     case STEPS.BOWL_SOUP:
-      if(pd<3.2){
-        cookStep=STEPS.BOWL_NOODLE;bowlHasNegi=false;bowlHasChashu=false;setHandItem('bowl_soup_noodle');
-        const wc0=customers.find(c=>c.state==='waiting');
-        if(wc0){const ot=wc0.orderType;const hint=[];if(ot.needNegi)hint.push('🌿ネギ');if(ot.needChashu)hint.push('🥩チャーシュー');showToast(`🍜 麺投入！「${ot.name}」→ ${hint.join('+')}を忘れずに`,3000);}
+      if(pd<2.4){
+        cookStep=STEPS.BOWL_NOODLE; bowlHasNegi=false; bowlHasChashu=false; setHandItem('bowl_soup_noodle');
+        const wc0=customers.find(c=>c.state==='waiting'&&!c.orderType.isChahan);
+        if(wc0){ const ot=wc0.orderType; const hint=[]; if(ot.needNegi) hint.push('🌿ネギ'); if(ot.needChashu) hint.push('🥩チャーシュー'); showToast(`🍜 麺投入！「${ot.name}」→ ${hint.join('+')}を忘れずに`,3000); }
         else showToast('🍜 麺を投入！トッピングを加えよう');
-        updateUI();return;
+        updateUI(); return;
       }
       break;
     case STEPS.BOWL_NOODLE:
-      if(gd<3.0&&!bowlHasNegi){
-        if(stock.negi<=0){showToast('⚠️ ネギの残り0！棚から補充してください',2000);return;}
-        stock.negi--;bowlHasNegi=true;
-        if(bowlHasChashu){cookStep=STEPS.BOWL_BOTH;setHandItem('bowl_both');showToast('🌿🥩 全部乗せ完成！カウンターへ');}
-        else{cookStep=STEPS.BOWL_NEGI;setHandItem('bowl_negi');showToast('🌿 ネギ乗せ完了！チャーシュー or カウンターへ');}
-        updateUI();return;
+      if(gd<2.4&&!bowlHasNegi){
+        if(stock.negi<=0){ showToast('⚠️ ネギの残り0！棚から補充してください',2000); return; }
+        stock.negi--; bowlHasNegi=true;
+        if(bowlHasChashu){ cookStep=STEPS.BOWL_BOTH; setHandItem('bowl_both'); showToast('🌿🥩 全部乗せ完成！カウンターへ'); }
+        else{ cookStep=STEPS.BOWL_NEGI; setHandItem('bowl_negi'); showToast('🌿 ネギ乗せ完了！チャーシュー or カウンターへ'); }
+        updateUI(); return;
       }
-      if(cd<3.0&&!bowlHasChashu){
-        if(stock.chashu<=0){showToast('⚠️ チャーシューの残り0！棚から補充してください',2000);return;}
-        stock.chashu--;bowlHasChashu=true;
-        if(bowlHasNegi){cookStep=STEPS.BOWL_BOTH;setHandItem('bowl_both');showToast('🌿🥩 全部乗せ完成！カウンターへ');}
-        else{cookStep=STEPS.BOWL_CHASHU;setHandItem('bowl_chashu');showToast('🥩 チャーシュー乗せ完了！ネギ or カウンターへ');}
-        updateUI();return;
+      if(cd<2.4&&!bowlHasChashu){
+        if(stock.chashu<=0){ showToast('⚠️ チャーシューの残り0！棚から補充してください',2000); return; }
+        stock.chashu--; bowlHasChashu=true;
+        if(bowlHasNegi){ cookStep=STEPS.BOWL_BOTH; setHandItem('bowl_both'); showToast('🌿🥩 全部乗せ完成！カウンターへ'); }
+        else{ cookStep=STEPS.BOWL_CHASHU; setHandItem('bowl_chashu'); showToast('🥩 チャーシュー乗せ完了！ネギ or カウンターへ'); }
+        updateUI(); return;
       }
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('⚠️ トッピングなしで完成？注文を確認して！');updateUI();return;}
+      if(ctD2<2.8){ cookStep=STEPS.RAMEN_COMPLETE; setHandItem('bowl_all'); showToast('⚠️ トッピングなしで完成？注文を確認して！'); updateUI(); return; }
       break;
     case STEPS.BOWL_NEGI:
-      if(cd<3.0&&!bowlHasChashu){
-        if(stock.chashu<=0){showToast('⚠️ チャーシューの残り0！棚から補充してください',2000);return;}
-        stock.chashu--;bowlHasChashu=true;cookStep=STEPS.BOWL_BOTH;setHandItem('bowl_both');showToast('🌿🥩 全部乗せ完成！カウンターへ');updateUI();return;
+      if(cd<2.4&&!bowlHasChashu){
+        if(stock.chashu<=0){ showToast('⚠️ チャーシューの残り0！棚から補充してください',2000); return; }
+        stock.chashu--; bowlHasChashu=true; cookStep=STEPS.BOWL_BOTH; setHandItem('bowl_both'); showToast('🌿🥩 全部乗せ完成！カウンターへ'); updateUI(); return;
       }
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ ラーメン完成！カウンターをタップ');updateUI();return;}
+      if(ctD2<2.8){ cookStep=STEPS.RAMEN_COMPLETE; setHandItem('bowl_all'); showToast('✅ ラーメン完成！カウンターをタップ'); updateUI(); return; }
       break;
     case STEPS.BOWL_CHASHU:
-      if(gd<3.0&&!bowlHasNegi){
-        if(stock.negi<=0){showToast('⚠️ ネギの残り0！棚から補充してください',2000);return;}
-        stock.negi--;bowlHasNegi=true;cookStep=STEPS.BOWL_BOTH;setHandItem('bowl_both');showToast('🌿🥩 全部乗せ完成！カウンターへ');updateUI();return;
+      if(gd<2.4&&!bowlHasNegi){
+        if(stock.negi<=0){ showToast('⚠️ ネギの残り0！棚から補充してください',2000); return; }
+        stock.negi--; bowlHasNegi=true; cookStep=STEPS.BOWL_BOTH; setHandItem('bowl_both'); showToast('🌿🥩 全部乗せ完成！カウンターへ'); updateUI(); return;
       }
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ ラーメン完成！カウンターをタップ');updateUI();return;}
+      if(ctD2<2.8){ cookStep=STEPS.RAMEN_COMPLETE; setHandItem('bowl_all'); showToast('✅ ラーメン完成！カウンターをタップ'); updateUI(); return; }
       break;
     case STEPS.BOWL_BOTH:
-      if(ctD2<3.5){cookStep=STEPS.RAMEN_COMPLETE;setHandItem('bowl_all');showToast('✅ 特製ラーメン完成！カウンターをタップ');updateUI();return;}
+      if(ctD2<2.8){ cookStep=STEPS.RAMEN_COMPLETE; setHandItem('bowl_all'); showToast('✅ 特製ラーメン完成！カウンターをタップ'); updateUI(); return; }
       break;
     case STEPS.RAMEN_COMPLETE:
-      if(ctD2<3.5){
-        readyRamen++;readyRamenQueue.push({hasNegi:bowlHasNegi,hasChashu:bowlHasChashu});
-        cookStep=STEPS.IDLE;bowlHasNegi=false;bowlHasChashu=false;setHandItem('empty');
-        showToast('🍜 ラーメンをカウンターに置いた！提供準備完了');updateUI();return;
+      if(ctD2<2.8){
+        readyRamen++; readyRamenQueue.push({hasNegi:bowlHasNegi,hasChashu:bowlHasChashu});
+        cookStep=STEPS.IDLE; bowlHasNegi=false; bowlHasChashu=false; setHandItem('empty');
+        showToast('🍜 ラーメンをカウンターに置いた！提供準備完了'); updateUI(); return;
       }
       break;
   }
 }
 
 const actionBtn=document.getElementById('action-btn');
-actionBtn.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();doAction();},{passive:false});
-actionBtn.addEventListener('click',e=>{e.stopPropagation();doAction();});
+actionBtn.addEventListener('touchstart',e=>{ e.preventDefault(); e.stopPropagation(); doAction(); },{passive:false});
+actionBtn.addEventListener('click',e=>{ e.stopPropagation(); doAction(); });
 
 // ================================================================
 // アクションプロンプト
@@ -2106,60 +2244,66 @@ actionBtn.addEventListener('click',e=>{e.stopPropagation();doAction();});
 function updateActionPrompt(){
   const el=document.getElementById('action-prompt');
   const flat=new THREE.Vector3(playerPos.x,0,playerPos.z);
-  const pcD=flat.distanceTo(new THREE.Vector3(PC_POS.x,0,PC_POS.z));
-  const nd =flat.distanceTo(new THREE.Vector3(NOODLE_SPACE.x,0,NOODLE_SPACE.z));
-  const pd =flat.distanceTo(new THREE.Vector3(POT_SPACE.x,0,POT_SPACE.z));
-  const cd =flat.distanceTo(new THREE.Vector3(CHASHU_SPACE.x,0,CHASHU_SPACE.z));
-  const gd =flat.distanceTo(new THREE.Vector3(NEGI_SPACE.x,0,NEGI_SPACE.z));
-  const ctD=flat.distanceTo(new THREE.Vector3(COUNTER_POS.x,0,COUNTER_POS.z));
-  const shD=flat.distanceTo(new THREE.Vector3(SHELF_POS.x,0,SHELF_POS.z));
-  const dvD=flat.distanceTo(new THREE.Vector3(DELIVERY_POS.x,0,DELIVERY_POS.z));
+  const pcD   = flat.distanceTo(new THREE.Vector3(PC_POS.x,    0,PC_POS.z));
+  const nd    = flat.distanceTo(new THREE.Vector3(NOODLE_SPACE.x,0,NOODLE_SPACE.z));
+  const pd    = flat.distanceTo(new THREE.Vector3(POT_SPACE.x,  0,POT_SPACE.z));
+  const cd    = flat.distanceTo(new THREE.Vector3(CHASHU_SPACE.x,0,CHASHU_SPACE.z));
+  const gd    = flat.distanceTo(new THREE.Vector3(NEGI_SPACE.x, 0,NEGI_SPACE.z));
+  const ctD   = flat.distanceTo(new THREE.Vector3(COUNTER_POS.x,0,COUNTER_POS.z));
+  const shD   = flat.distanceTo(new THREE.Vector3(SHELF_POS.x,  0,SHELF_POS.z));
+  const dvD   = flat.distanceTo(new THREE.Vector3(DELIVERY_POS.x,0,DELIVERY_POS.z));
+  const chahD = chahanEnabled&&chahataTaiPlaced ? flat.distanceTo(new THREE.Vector3(CHAHATA_POS.x,0,CHAHATA_POS.z)) : 9999;
   const hasPaid=customers.some(c=>c.coinMesh&&c.state==='paid');
 
   let msg=null;
-  if(hasPaid&&ctD<3.5)         msg=`💰 タップ → お金を受け取る(+$${ramenPrice})`;
-  else if(pcD<3.2)              msg='🖥️ タップ → 仕入れ＆価格設定を開く';
+  if(hasPaid&&ctD<2.8)           msg=`💰 タップ → お金を受け取る`;
+  else if(pcD<2.6)               msg='🖥️ タップ → 仕入れ＆価格設定を開く';
   else if(carryingBox){
-    if(shD<3.2)                 msg='📦 タップ → 棚に収納する';
+    if(shD<2.5)                  msg='📦 タップ → 棚に収納する';
   } else if(carryingRefill){
     const type=carryingRefill.type;
     const tp=type==='men'?NOODLE_SPACE:type==='soup'?POT_SPACE:type==='chashu'?CHASHU_SPACE:NEGI_SPACE;
     const d=flat.distanceTo(new THREE.Vector3(tp.x,0,tp.z));
-    if(d<3.2)                   msg=`🔄 タップ → ${refillLabel(type)}調理台にチャージ`;
-  } else if(deliveryBoxes.length>0&&dvD<3.8&&cookStep===STEPS.IDLE&&handItem==='empty'){
+    if(d<2.5)                    msg=`🔄 タップ → ${refillLabel(type)}調理台にチャージ`;
+  } else if(deliveryBoxes.length>0&&dvD<3.0&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){
     msg='📦 タップ → 段ボールを持つ';
-  } else if(shD<3.2&&cookStep===STEPS.IDLE&&handItem==='empty'){
+  } else if(shD<2.5&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){
     msg=Object.values(shelfStock).some(v=>v>0)?'🏪 タップ → 補充食材を取り出す':'📦 棚が空。PCで発注しよう';
+  } else if(chahD<2.8&&cookStep===STEPS.IDLE&&chahanStep===CHAHAN_STEPS.IDLE&&handItem==='empty'){
+    const waitChahan=customers.find(c=>c.state==='waiting'&&c.orderType.isChahan);
+    if(waitChahan) msg='🍳 タップ → チャーハンを作り始める';
+  } else if(chahanStep===CHAHAN_STEPS.COMPLETE&&ctD<2.8){
+    msg='🍳 タップ → チャーハンをカウンターに置く';
   } else {
     switch(cookStep){
       case STEPS.IDLE:
-        if(nd<3.0) msg=stock.men>0?'🍜 タップ → 生麺を掴む':'⚠️ 麺の調理台残り0！棚から補充を';
-        else if(readyRamen>0&&ctD<3.5) msg='🍜 タップ → ラーメンを提供';
+        if(nd<2.4) msg=stock.men>0?'🍜 タップ → 生麺を掴む':'⚠️ 麺の調理台残り0！棚から補充を';
+        else if(readyRamen>0&&ctD<2.8) msg='🍜 タップ → ラーメンを提供';
         break;
-      case STEPS.HAVE_RAW:    if(pd<3.2) msg='🫕 タップ → 麺を鍋に投入';break;
-      case STEPS.BOILED_WAIT: if(pd<3.2) msg='🥢 タップ → 麺を上げる';break;
-      case STEPS.NOODLE_READY:if(ctD<3.5) msg='🥣 タップ → 空の丼を取る';break;
-      case STEPS.HAVE_BOWL:   if(pd<3.2) msg=stock.soup>0?'🍵 タップ → スープを注ぐ':'⚠️ スープ残り0！棚から補充を';break;
-      case STEPS.BOWL_SOUP:   if(pd<3.2) msg='🍜 タップ → 麺を投入';break;
+      case STEPS.HAVE_RAW:     if(pd<2.4) msg='🫕 タップ → 麺を鍋に投入'; break;
+      case STEPS.BOILED_WAIT:  if(pd<2.4) msg='🥢 タップ → 麺を上げる'; break;
+      case STEPS.NOODLE_READY: if(ctD<2.8) msg='🥣 タップ → 空の丼を取る'; break;
+      case STEPS.HAVE_BOWL:    if(pd<2.4) msg=stock.soup>0?'🍵 タップ → スープを注ぐ':'⚠️ スープ残り0！棚から補充を'; break;
+      case STEPS.BOWL_SOUP:    if(pd<2.4) msg='🍜 タップ → 麺を投入'; break;
       case STEPS.BOWL_NOODLE:
-        if(gd<3.0)   msg=stock.negi>0?'🌿 タップ → ネギを乗せる':'⚠️ ネギ残り0';
-        else if(cd<3.0) msg=stock.chashu>0?'🥩 タップ → チャーシューを乗せる':'⚠️ チャーシュー残り0';
-        else if(ctD<3.5) msg='↩ タップ → カウンターへ（トッピングなしラーメン）';
+        if(gd<2.4) msg=stock.negi>0?'🌿 タップ → ネギを乗せる':'⚠️ ネギ残り0';
+        else if(cd<2.4) msg=stock.chashu>0?'🥩 タップ → チャーシューを乗せる':'⚠️ チャーシュー残り0';
+        else if(ctD<2.8) msg='↩ タップ → カウンターへ（トッピングなし）';
         break;
       case STEPS.BOWL_NEGI:
-        if(cd<3.0) msg=stock.chashu>0?'🥩 タップ → チャーシューを乗せる':'⚠️ チャーシュー残り0';
-        else if(ctD<3.5) msg='✅ タップ → カウンターに置く';
+        if(cd<2.4) msg=stock.chashu>0?'🥩 タップ → チャーシューを乗せる':'⚠️ チャーシュー残り0';
+        else if(ctD<2.8) msg='✅ タップ → カウンターに置く';
         break;
       case STEPS.BOWL_CHASHU:
-        if(gd<3.0) msg=stock.negi>0?'🌿 タップ → ネギを乗せる':'⚠️ ネギ残り0';
-        else if(ctD<3.5) msg='✅ タップ → カウンターに置く';
+        if(gd<2.4) msg=stock.negi>0?'🌿 タップ → ネギを乗せる':'⚠️ ネギ残り0';
+        else if(ctD<2.8) msg='✅ タップ → カウンターに置く';
         break;
       case STEPS.BOWL_BOTH:
-      case STEPS.RAMEN_COMPLETE: if(ctD<3.5) msg='✅ タップ → カウンターに置く';break;
+      case STEPS.RAMEN_COMPLETE: if(ctD<2.8) msg='✅ タップ → カウンターに置く'; break;
     }
   }
-  if(msg){el.textContent=msg;el.style.display='block';}
-  else{el.style.display='none';}
+  if(msg){ el.textContent=msg; el.style.display='block'; }
+  else{ el.style.display='none'; }
 }
 
 // ================================================================
@@ -2171,36 +2315,34 @@ let jsTouchId=null;
 const jsVec=new THREE.Vector2(0,0);
 const JS_MAX=48;
 
-function jsRect(){return jsZone.getBoundingClientRect();}
-
-jsZone.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];jsTouchId=t.identifier;updateThumb(t);},{passive:false});
-jsZone.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){if(t.identifier===jsTouchId){updateThumb(t);break;}}},{passive:false});
+function jsRect(){ return jsZone.getBoundingClientRect(); }
+jsZone.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.changedTouches[0]; jsTouchId=t.identifier; updateThumb(t); },{passive:false});
+jsZone.addEventListener('touchmove',e=>{ e.preventDefault(); for(const t of e.changedTouches){ if(t.identifier===jsTouchId){ updateThumb(t); break; } } },{passive:false});
 ['touchend','touchcancel'].forEach(ev=>jsZone.addEventListener(ev,e=>{
-  for(const t of e.changedTouches){if(t.identifier===jsTouchId){jsTouchId=null;jsVec.set(0,0);jsThumb.style.transform='translate(-50%,-50%)';break;}}
+  for(const t of e.changedTouches){ if(t.identifier===jsTouchId){ jsTouchId=null; jsVec.set(0,0); jsThumb.style.transform='translate(-50%,-50%)'; break; } }
 }));
 function updateThumb(touch){
   const r=jsRect();
   const cx=r.left+r.width/2,cy=r.top+r.height/2;
   let dx=touch.clientX-cx,dy=touch.clientY-cy;
   const dist=Math.hypot(dx,dy);
-  if(dist>JS_MAX){dx*=JS_MAX/dist;dy*=JS_MAX/dist;}
+  if(dist>JS_MAX){ dx*=JS_MAX/dist; dy*=JS_MAX/dist; }
   jsVec.set(dx/JS_MAX,dy/JS_MAX);
   jsThumb.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
 }
 
 // ================================================================
-// 視点スワイプ
+// 視点操作
 // ================================================================
 let lookId=null,lookLX=0,lookLY=0;
 const LOOK_SENS=0.0055;
-
 canvas.addEventListener('touchstart',e=>{
   if(orderModalOpen) return;
   for(const t of e.changedTouches){
     const r=jsRect();
     const inJS=t.clientX>=r.left-14&&t.clientX<=r.right+14&&t.clientY>=r.top-14&&t.clientY<=r.bottom+14;
     const inBtn=t.clientX>=window.innerWidth-110&&t.clientY>=window.innerHeight-110;
-    if(!inJS&&!inBtn&&lookId===null){lookId=t.identifier;lookLX=t.clientX;lookLY=t.clientY;}
+    if(!inJS&&!inBtn&&lookId===null){ lookId=t.identifier; lookLX=t.clientX; lookLY=t.clientY; }
   }
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
@@ -2211,41 +2353,35 @@ canvas.addEventListener('touchmove',e=>{
       yaw-=(t.clientX-lookLX)*LOOK_SENS;
       pitch-=(t.clientY-lookLY)*LOOK_SENS;
       pitch=Math.max(-1.1,Math.min(1.1,pitch));
-      lookLX=t.clientX;lookLY=t.clientY;
+      lookLX=t.clientX; lookLY=t.clientY;
     }
   }
 },{passive:false});
 ['touchend','touchcancel'].forEach(ev=>canvas.addEventListener(ev,e=>{
-  for(const t of e.changedTouches){if(t.identifier===lookId)lookId=null;}
+  for(const t of e.changedTouches){ if(t.identifier===lookId) lookId=null; }
 }));
 
 let mouseDown=false,mouseLX=0,mouseLY=0;
-canvas.addEventListener('mousedown',e=>{if(e.button===0){mouseDown=true;mouseLX=e.clientX;mouseLY=e.clientY;}});
+canvas.addEventListener('mousedown',e=>{ if(e.button===0){ mouseDown=true; mouseLX=e.clientX; mouseLY=e.clientY; } });
 window.addEventListener('mousemove',e=>{
   if(!mouseDown||orderModalOpen) return;
   yaw-=(e.clientX-mouseLX)*LOOK_SENS*0.9;
   pitch-=(e.clientY-mouseLY)*LOOK_SENS*0.9;
   pitch=Math.max(-1.1,Math.min(1.1,pitch));
-  mouseLX=e.clientX;mouseLY=e.clientY;
+  mouseLX=e.clientX; mouseLY=e.clientY;
 });
 window.addEventListener('mouseup',()=>mouseDown=false);
 
 const keys={};
 window.addEventListener('keydown',e=>keys[e.code]=true);
 window.addEventListener('keyup',  e=>keys[e.code]=false);
-window.addEventListener('keypress',e=>{if(e.code==='Space'||e.code==='KeyE')doAction();});
+window.addEventListener('keypress',e=>{ if(e.code==='Space'||e.code==='KeyE') doAction(); });
 
 // ================================================================
 // カメラ方向
 // ================================================================
-function getCamFwd(){
-  return new THREE.Vector3(
-    Math.sin(yaw)*Math.cos(pitch),0,Math.cos(yaw)*Math.cos(pitch)
-  ).normalize();
-}
-function getCamRight(){
-  return new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)).normalize();
-}
+function getCamFwd(){ return new THREE.Vector3(Math.sin(yaw)*Math.cos(pitch),0,Math.cos(yaw)*Math.cos(pitch)).normalize(); }
+function getCamRight(){ return new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)).normalize(); }
 
 // ================================================================
 // 吹き出し投影
@@ -2254,9 +2390,9 @@ const sv=new THREE.Vector3();
 function updateSpeechBubbles(){
   customers.forEach(c=>{
     if(!c.speechEl) return;
-    sv.set(c.mesh.position.x,c.mesh.position.y+2.1,c.mesh.position.z);
+    sv.set(c.mesh.position.x,c.mesh.position.y+1.9,c.mesh.position.z);
     sv.project(camera);
-    if(sv.z>1){c.speechEl.style.display='none';return;}
+    if(sv.z>1){ c.speechEl.style.display='none'; return; }
     c.speechEl.style.display='block';
     c.speechEl.style.left=(sv.x*.5+.5)*window.innerWidth+'px';
     c.speechEl.style.top=(-sv.y*.5+.5)*window.innerHeight+'px';
@@ -2264,7 +2400,7 @@ function updateSpeechBubbles(){
 }
 
 // ================================================================
-// ゲームループ
+// メインループ
 // ================================================================
 let lastTime=0,coinBobT=0;
 
@@ -2279,7 +2415,7 @@ function animate(ts){
 
   if(dayActive){
     dayTimer-=dt;
-    if(dayTimer<=0){dayTimer=0;dayActive=false;updateTimerUI();setTimeout(showDayResult,800);return;}
+    if(dayTimer<=0){ dayTimer=0; dayActive=false; updateTimerUI(); setTimeout(showDayResult,800); return; }
     updateTimerUI();
   }
 
@@ -2293,14 +2429,14 @@ function animate(ts){
     boilTimer-=dt;
     document.getElementById('cooking-ui').textContent=`⏳ 茹で中… ${Math.ceil(boilTimer)}秒`;
     if(boilTimer<=0){
-      isBoiling=false;cookStep=STEPS.BOILED_WAIT;
+      isBoiling=false; cookStep=STEPS.BOILED_WAIT;
       hideBoilingNoodle();
-      updateCookingUI();updateUI();
+      updateCookingUI(); updateUI();
       showToast('✅ 茹で上がり！②鍋をタップして麺を上げよう',2500);
     }
   }
 
-  const speed=5.0;
+  const speed=4.2;
   const fwd=getCamFwd();
   const right=getCamRight();
   const move=new THREE.Vector3(0,0,0);
@@ -2331,11 +2467,11 @@ function animate(ts){
   if(handMesh){
     const f=getCamFwd(),r=getCamRight();
     handMesh.position.set(
-      playerPos.x+f.x*0.74+r.x*0.40,
-      playerPos.y-0.68,
-      playerPos.z+f.z*0.74+r.z*0.40
+      playerPos.x+f.x*0.68+r.x*0.36,
+      playerPos.y-0.62,
+      playerPos.z+f.z*0.68+r.z*0.36
     );
-    handMesh.rotation.y+=dt*0.85;
+    handMesh.rotation.y+=dt*0.80;
   }
 
   updateTebboPosition(dt);
@@ -2346,9 +2482,9 @@ function animate(ts){
     const dx=c.targetX-c.mesh.position.x;
     const dz=c.targetZ-c.mesh.position.z;
     const dist=Math.hypot(dx,dz);
-    if(dist>0.10){
-      c.mesh.position.x+=(dx/dist)*2.4*dt;
-      c.mesh.position.z+=(dz/dist)*2.4*dt;
+    if(dist>0.08){
+      c.mesh.position.x+=(dx/dist)*2.2*dt;
+      c.mesh.position.z+=(dz/dist)*2.2*dt;
       c.mesh.position.y=c.groundOffset;
       c.mesh.rotation.y=Math.atan2(dx,dz)+Math.PI;
     } else {
@@ -2361,12 +2497,12 @@ function animate(ts){
 
   coinBobT+=dt;
   customers.forEach(c=>{
-    if(c.coinMesh){c.coinMesh.position.y=1.08+Math.sin(coinBobT*3.0)*0.055;c.coinMesh.rotation.y+=dt*2.4;}
+    if(c.coinMesh){ c.coinMesh.position.y=1.06+Math.sin(coinBobT*3.0)*0.048; c.coinMesh.rotation.y+=dt*2.2; }
   });
 
   deliveryBoxes.forEach((b,i)=>{
-    b.mesh.position.y=Math.sin(ts*0.001+i*1.2)*0.04+0.25;
-    b.mesh.rotation.y+=dt*0.5;
+    b.mesh.position.y=Math.sin(ts*0.001+i*1.2)*0.036+0.22;
+    b.mesh.rotation.y+=dt*0.46;
   });
 
   updateActionPrompt();
@@ -2392,17 +2528,15 @@ function setProgress(p,msg){
   document.getElementById('loading-bar').style.width=(p*100)+'%';
   document.getElementById('loading-msg').textContent=msg;
 }
-
 function startGame(){
   document.getElementById('loading-screen').style.display='none';
-  updateUI();updateTimerUI();updatePriceUI();
+  updateUI(); updateTimerUI(); updatePriceUI();
   setTimeout(()=>{
     spawnCustomer();
     showToast('🎮 開店！まずPCで食材を発注→段ボールを棚へ→調理台に補充！',4500);
   },1200);
   animate(0);
 }
-
 function loadGLTFLoaderScript(cb){
   const s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
@@ -2410,14 +2544,13 @@ function loadGLTFLoaderScript(cb){
   s.onerror=()=>cb(new Error('failed'));
   document.head.appendChild(s);
 }
-
 function tryLoadModel(loader,url,onOk,onFail){
   try{
     loader.load(url,gltf=>onOk(gltf),
-      xhr=>{if(xhr.total)setProgress(xhr.loaded/xhr.total*0.05,'');},
+      xhr=>{ if(xhr.total) setProgress(xhr.loaded/xhr.total*0.05,''); },
       err=>onFail(err)
     );
-  }catch(e){onFail(e);}
+  }catch(e){ onFail(e); }
 }
 
 // ── 起動 ──
@@ -2435,168 +2568,99 @@ loadGLTFLoaderScript(err=>{
   }
 
   const loader=new THREE.GLTFLoader();
-  // ★ waternabe.glb を追加したので total=14
+  // total=13（waternabe含む、Chahata は購入時ロード）
   let loaded=0;
-  const total=14;
+  const total=13;
 
   function oneDone(){
     loaded++;
     setProgress(loaded/total*0.98,`モデル読み込み (${loaded}/${total})`);
-    if(loaded>=total){setProgress(1,'準備完了！');startGame();}
+    if(loaded>=total){ setProgress(1,'準備完了！'); startGame(); }
   }
 
   // ラーメン
   tryLoadModel(loader,'./ramen.glb',
-    gltf=>{ramenTemplate=gltf.scene;oneDone();},
+    gltf=>{ ramenTemplate=gltf.scene; oneDone(); },
     _=>oneDone()
   );
 
-  // 人間 ×3
+  // 人間×3
   [1,2,3].forEach((n,i)=>{
     tryLoadModel(loader,`./human${n}.glb`,
-      gltf=>{humanTemplates[i]=normalizeHuman(gltf.scene);oneDone();},
-      _=>{humanTemplates[i]=makeFallbackHuman(i);oneDone();}
+      gltf=>{ humanTemplates[i]=normalizeHuman(gltf.scene); oneDone(); },
+      _=>{ humanTemplates[i]=makeFallbackHuman(i); oneDone(); }
     );
   });
 
-  // ================================================================
-  // 厨房機器（GLBロード時）
-  //   targetHeight = 2.2（normalizeModelToFloor の内部正規化サイズ）
-  //   UNIFORM_KITCHEN_SCALE = 0.70（★旧0.47から拡大）
-  //   最終表示高さ = 2.2 × 0.70 ≈ 1.54
-  //   → 立って調理する人間の腰〜胸の高さにリアルに対応
-  // ================================================================
-
   // 麺スペース
   tryLoadModel(loader,'./men.glb',
-    gltf=>{
-      placeGLBOverFallback(
-        gltf.scene,
-        NOODLE_SPACE,
-        2.2,
-        'noodle',
-        Math.PI/2,
-        UNIFORM_KITCHEN_SCALE
-      );
-      oneDone();
-    },
+    gltf=>{ placeGLBOverFallback(gltf.scene,NOODLE_SPACE,2.2,'noodle',Math.PI/2,UNIFORM_KITCHEN_SCALE); oneDone(); },
     _=>oneDone()
   );
 
   // ネギスペース
   tryLoadModel(loader,'./negi.glb',
-    gltf=>{
-      placeGLBOverFallback(
-        gltf.scene,
-        NEGI_SPACE,
-        2.2,
-        'negi',
-        Math.PI/2,
-        UNIFORM_KITCHEN_SCALE
-      );
-      oneDone();
-    },
+    gltf=>{ placeGLBOverFallback(gltf.scene,NEGI_SPACE,2.2,'negi',Math.PI/2,UNIFORM_KITCHEN_SCALE); oneDone(); },
     _=>oneDone()
   );
 
   // チャーシュースペース
   tryLoadModel(loader,'./chashu.glb',
-    gltf=>{
-      placeGLBOverFallback(
-        gltf.scene,
-        CHASHU_SPACE,
-        2.2,
-        'chashu',
-        Math.PI/2,
-        UNIFORM_KITCHEN_SCALE
-      );
-      oneDone();
-    },
+    gltf=>{ placeGLBOverFallback(gltf.scene,CHASHU_SPACE,2.2,'chashu',Math.PI/2,UNIFORM_KITCHEN_SCALE); oneDone(); },
     _=>oneDone()
   );
 
-  // ================================================================
-  // ★ 鍋スペース：nabe.glb（通常）と waternabe.glb（茹で時）の2つをロード
-  //    両方とも全く同じ座標・スケールで配置し、visible で切り替える
-  // ================================================================
-
-  // nabe.glb（通常時の鍋 → 初期表示 true）
+  // nabe.glb（通常時・初期表示 true）
   tryLoadModel(loader,'./nabe.glb',
     gltf=>{
-      // フォールバック pot を除去するのはここで一度だけ
-      nabeWrapper = normalizeAndPlaceNabe(
-        gltf.scene,
-        POT_SPACE,
-        'pot',               // fallbackKey
-        Math.PI/2,           // rotY
-        UNIFORM_KITCHEN_SCALE,
-        true                 // visible = true（初期表示）
-      );
+      nabeWrapper=normalizeAndPlaceNabe(gltf.scene,POT_SPACE,'pot',Math.PI/2,UNIFORM_KITCHEN_SCALE,true);
       oneDone();
     },
     _=>{
-      // nabe.glb がない場合はフォールバックをそのまま使い、
-      // waternabe 用にフォールバックのダミーラッパーを作成
-      nabeWrapper = new THREE.Group();
-      nabeWrapper.visible = true;
-      scene.add(nabeWrapper);
+      nabeWrapper=new THREE.Group(); nabeWrapper.visible=true; scene.add(nabeWrapper);
       oneDone();
     }
   );
 
-  // waternabe.glb（茹で時の水入り鍋 → 初期表示 false）
+  // waternabe.glb（茹で時・初期表示 false）
   tryLoadModel(loader,'./waternabe.glb',
     gltf=>{
-      waternabeWrapper = normalizeAndPlaceNabe(
-        gltf.scene,
-        POT_SPACE,
-        null,                // フォールバック除去しない（nabe.glb で既に除去済み）
-        Math.PI/2,           // rotY（nabe と同じ）
-        UNIFORM_KITCHEN_SCALE,
-        false                // visible = false（初期は非表示）
-      );
+      waternabeWrapper=normalizeAndPlaceNabe(gltf.scene,POT_SPACE,null,Math.PI/2,UNIFORM_KITCHEN_SCALE,false);
       oneDone();
     },
     _=>{
-      // waternabe.glb がない場合は空のグループ（切り替え時に何も表示しない）
-      waternabeWrapper = new THREE.Group();
-      waternabeWrapper.visible = false;
-      scene.add(waternabeWrapper);
+      waternabeWrapper=new THREE.Group(); waternabeWrapper.visible=false; scene.add(waternabeWrapper);
       oneDone();
     }
   );
 
   // 外の景色
   tryLoadModel(loader,'./soto.glb',
-    gltf=>{placeSotoModel(gltf.scene);oneDone();},
+    gltf=>{ placeSotoModel(gltf.scene); oneDone(); },
     _=>oneDone()
   );
 
   // 床
   tryLoadModel(loader,'./floor.glb',
-    gltf=>{placeFloorModel(gltf.scene);oneDone();},
+    gltf=>{ placeFloorModel(gltf.scene); oneDone(); },
     _=>oneDone()
   );
 
-  // 壁（外周タイル）
+  // 壁
   tryLoadModel(loader,'./wall.glb',
-    gltf=>{placeWallModels(gltf.scene);oneDone();},
+    gltf=>{ placeWallModels(gltf.scene); oneDone(); },
     _=>oneDone()
   );
 
   // 椅子
   tryLoadModel(loader,'./isu.glb',
-    gltf=>{placeISUModels(gltf.scene);oneDone();},
+    gltf=>{ placeISUModels(gltf.scene); oneDone(); },
     _=>oneDone()
   );
 
   // テボ（pol.glb）
   tryLoadModel(loader,'./pol.glb',
-    gltf=>{
-      polGlbModel=gltf.scene;
-      setupTebboPivot(polGlbModel);
-      oneDone();
-    },
+    gltf=>{ polGlbModel=gltf.scene; setupTebboPivot(polGlbModel); oneDone(); },
     _=>oneDone()
   );
 });

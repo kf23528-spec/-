@@ -370,7 +370,7 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
       <div class="upgrade-item" id="upg-fastboil">
         <div class="uinfo">
           <div class="uname">⚡ 超高速麺茹で機</div>
-          <div class="udesc">茹で時間が3秒→1.5秒に短縮！回転率UP</div>
+          <div class="udesc">手動は5〜7秒で見極め。購入後は麺上げを自動化</div>
           <div class="ucost">$400</div>
           <div class="ueffect" id="upg-fastboil-eff" style="color:#aaa;">未購入</div>
         </div>
@@ -532,7 +532,7 @@ let fastBoilEnabled      = false;
 let showcaseEnabled      = false;
 let tomokun              = false;
 const CHAHAN_BOIL_TIME   = 3.0;  // fastboilで短縮
-const NORMAL_BOIL_TIME   = 3.0;
+const NORMAL_BOIL_TIME   = 6.0;
 let currentBoilTime      = NORMAL_BOIL_TIME;
 
 // ── チャーハン ──
@@ -1204,7 +1204,7 @@ window.buyUpgrade=function(key){
       spawnAutoSoupMachine();
       break;
     case 'fastboil':
-      fastBoilEnabled=true;currentBoilTime=1.5;
+      fastBoilEnabled=true;currentBoilTime=6.0;
       document.getElementById('upg-fastboil-btn').className='btn-upgrade owned';
       document.getElementById('upg-fastboil-btn').textContent='✅ 設置済';
       document.getElementById('upg-fastboil-eff').textContent='✅ 茹で時間→1.5秒！';
@@ -1272,7 +1272,7 @@ window.buyUpgrade=function(key){
       document.getElementById('upg-autosoup-eff').style.color='#7fff7f';
       spawnAutoSoupMachine();break;
     case 'fastboil':
-      fastBoilEnabled=true;currentBoilTime=1.5;
+      fastBoilEnabled=true;currentBoilTime=6.0;
       document.getElementById('upg-fastboil-eff').textContent='✅ 1.5秒に短縮！';
       document.getElementById('upg-fastboil-eff').style.color='#7fff7f';
       spawnFastBoilMachine();break;
@@ -2130,7 +2130,25 @@ function animate(ts){
     boilTimer-=dt;
     const remaining=Math.max(0,Math.ceil(boilTimer));
     document.getElementById('cooking-ui').textContent=`⏳ 茹で中… ${remaining}秒`;
-    if(boilTimer<=0){isBoiling=false;cookStep=STEPS.BOILED_WAIT;hideBoilingNoodle();updateCookingUI();updateUI();showToast('✅ 茹で上がり！②鍋をタップして麺を上げよう',2500);}
+    if(boilTimer<=0){
+      isBoiling=false;
+      if(fastBoilEnabled){
+        cookStep=STEPS.NOODLE_READY;
+        yukiriLeft=3;
+        setHandItem('boiled_noodle');
+        hideBoilingNoodle();
+        stopBoilingVisuals();
+        switchNabePot('yukiri');
+        showTebbo();
+        showToast('⚡ 自動麺茹で機が完璧に麺を上げた！',2500);
+        updateCookingUI();updateUI();
+      }else{
+        cookStep=STEPS.BOILED_WAIT;
+        hideBoilingNoodle();
+        updateCookingUI();updateUI();
+        showToast('✅ 茹で上がり！②鍋をタップして麺を上げよう',2500);
+      }
+    }
   }
 
   const speed=4.2;
@@ -2244,6 +2262,348 @@ loadGLTFLoaderScript(err=>{
   tryLoadModel(loader,'./isu.glb',gltf=>{placeISUModels(gltf.scene);oneDone();},_=>oneDone());
   tryLoadModel(loader,'./pol.glb',gltf=>{setupTebboPivot(gltf.scene);oneDone();},_=>oneDone());
 });
+
+// ================================================================
+// 追加拡張: 仕込みモード / 盛り付け編集 / 安全ロック
+// ================================================================
+(function(){
+  if(window.__ramenExtInstalled) return;
+  window.__ramenExtInstalled = true;
+
+  window.__beautyBonus = 0;
+  window.__prep = { negi: 6, chashu: 6, negiProg: 0, chashuProg: 0, active: null, lastHit: 0, dragging: false };
+  window.__soupAutoRefillLock = false;
+
+  const style = document.createElement('style');
+  style.textContent = `
+  #extra-tools{position:fixed;right:14px;bottom:126px;z-index:220;display:flex;gap:8px;flex-wrap:wrap;max-width:min(340px,92vw);}
+  #extra-tools .ext-btn{padding:12px 14px;border-radius:16px;border:1px solid rgba(255,210,120,.25);box-shadow:0 12px 26px rgba(0,0,0,.24);font-weight:900;cursor:pointer;backdrop-filter:blur(10px);}
+  #extra-tools .ext-btn.a{background:linear-gradient(180deg,#f5cd67,#c98a1f);color:#160b06;}
+  #extra-tools .ext-btn.b{background:linear-gradient(180deg,#2b3f5f,#18273e);color:#fff;}
+  #extra-tools .ext-btn.c{background:linear-gradient(180deg,#245c3b,#183524);color:#fff;}
+  .ext-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:900;}
+  .ext-modal.show{display:flex;}
+  .ext-panel{width:min(920px,94vw);max-height:92vh;overflow:auto;border-radius:28px;background:linear-gradient(180deg,rgba(31,20,12,.98),rgba(18,11,8,.98));border:1px solid rgba(255,210,120,.18);box-shadow:0 22px 60px rgba(0,0,0,.45);color:#fff;}
+  .ext-head{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
+  .ext-head h3{margin:0;font-size:22px}
+  .ext-head p{margin:6px 0 0;color:#c9b9a3;font-size:12px;line-height:1.6}
+  .ext-body{padding:16px 20px 20px}
+  .ext-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+  .ext-card{border-radius:18px;padding:14px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);}
+  .ext-card h4{margin:0 0 8px}
+  .ext-card .small{font-size:12px;color:#c9b9a3;line-height:1.6}
+  .ext-progress{height:12px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px}
+  .ext-progress > div{height:100%;width:0%;background:linear-gradient(90deg,#6ad5ff,#52f0aa);border-radius:999px;}
+  .ext-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .ext-action{padding:11px 14px;border-radius:14px;background:linear-gradient(180deg,#f5cd67,#c98a1f);color:#160b06;font-weight:900;border:none}
+  #beautyBowlWrap{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}
+  #beautyBowl{position:relative;height:360px;border-radius:24px;background:
+      radial-gradient(circle at 50% 44%, rgba(255,255,255,.09), transparent 32%),
+      radial-gradient(circle at 50% 53%, rgba(180,120,50,.22), transparent 52%),
+      linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.07);overflow:hidden}
+  #beautyBowlCore{position:absolute;left:50%;top:54%;width:280px;height:180px;transform:translate(-50%,-50%);border-radius:50% 50% 46% 46% / 44% 44% 62% 62%;background:radial-gradient(circle at 50% 30%, rgba(255,255,255,.88), rgba(244,210,152,.93) 58%, rgba(189,136,73,.95) 100%);box-shadow:inset 0 -20px 40px rgba(0,0,0,.14),0 18px 34px rgba(0,0,0,.22);}
+  #beautyTokens{position:absolute;inset:0}
+  .beautyToken{position:absolute;width:36px;height:26px;border-radius:12px;background:linear-gradient(180deg,#d38a5f,#8c3d1a);border:1px solid rgba(255,255,255,.22);box-shadow:0 6px 16px rgba(0,0,0,.22);cursor:grab;touch-action:none;}
+  .beautyToken.negi{background:linear-gradient(180deg,#84d76b,#338f37);width:32px;height:22px;border-radius:999px}
+  .beautyToken.dragging{cursor:grabbing;transform:scale(1.06);z-index:30}
+  .beautyToolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .beautyPill{padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.09);font-size:12px;font-weight:800}
+  .beautyNote{font-size:12px;color:#c9b9a3;line-height:1.6}
+  `;
+  document.head.appendChild(style);
+
+  const tools = document.createElement('div');
+  tools.id = 'extra-tools';
+  tools.innerHTML = `
+    <button class="ext-btn a" id="openPrepExt">🔪 仕込みモード</button>
+    <button class="ext-btn b" id="openBeautyExt">✨ 盛り付け編集</button>
+  `;
+  document.body.appendChild(tools);
+  const mainPrepBtn = document.getElementById('openPrepFromMain'); if(mainPrepBtn){ mainPrepBtn.addEventListener('click', ()=>{ openPrepExt(); }); }
+
+  const prepModal = document.createElement('div');
+  prepModal.id = 'prepExtModal';
+  prepModal.className = 'ext-modal';
+  prepModal.innerHTML = `
+    <div class="ext-panel">
+      <div class="ext-head">
+        <h3>🔪 仕込みモード</h3>
+        <p>クリックでもドラッグでも切れます。切った分はそのまま麺・トッピング在庫に加算されます。補充処理は1回ずつの安全処理にしてあります。</p>
+      </div>
+      <div class="ext-body">
+        <div class="ext-grid">
+          <div class="ext-card" data-prep-card="negi">
+            <h4>🌿 長ネギ</h4>
+            <div class="small">原料を切るとネギ在庫へ変換します。</div>
+            <div class="ext-progress"><div id="prepNegiBar"></div></div>
+            <div class="beautyToolbar"><span class="beautyPill">原料 <span id="prepNegiRaw">6</span></span><span class="beautyPill">仕込み済 <span id="prepNegiDone">0</span></span></div>
+            <div class="ext-actions"><button class="ext-action" data-prep-cut="negi">トントン切る</button></div>
+          </div>
+          <div class="ext-card" data-prep-card="chashu">
+            <h4>🥩 チャーシューの塊</h4>
+            <div class="small">原料を切るとチャーシュー在庫へ変換します。</div>
+            <div class="ext-progress"><div id="prepChashuBar"></div></div>
+            <div class="beautyToolbar"><span class="beautyPill">原料 <span id="prepChashuRaw">6</span></span><span class="beautyPill">仕込み済 <span id="prepChashuDone">0</span></span></div>
+            <div class="ext-actions"><button class="ext-action" data-prep-cut="chashu">トントン切る</button></div>
+          </div>
+          <div class="ext-card">
+            <h4>操作のコツ</h4>
+            <div class="small">押しっぱなし＋少し動かすと連打より安定します。ループで回し続けないため、ここで画面を止めません。</div>
+            <div class="beautyToolbar">
+              <span class="beautyPill">ネギ在庫 <span id="prepStockNegi">0</span></span>
+              <span class="beautyPill">チャーシュー在庫 <span id="prepStockChashu">0</span></span>
+            </div>
+            <div class="ext-actions"><button class="ext-action" id="closePrepExt">閉じる</button></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(prepModal);
+
+  const beautyModal = document.createElement('div');
+  beautyModal.id = 'beautyExtModal';
+  beautyModal.className = 'ext-modal';
+  beautyModal.innerHTML = `
+    <div class="ext-panel">
+      <div class="ext-head">
+        <h3>✨ 盛り付け編集</h3>
+        <p>ネギとチャーシューを自由にドラッグできます。中心からズレすぎると減点、重なりすぎると汚い判定になります。</p>
+      </div>
+      <div class="ext-body">
+        <div id="beautyBowlWrap">
+          <div>
+            <div id="beautyBowl">
+              <div id="beautyBowlCore"></div>
+              <div id="beautyTokens"></div>
+            </div>
+            <div class="beautyToolbar">
+              <span class="beautyPill">見栄えボーナス <span id="beautyBonusText">0</span></span>
+              <span class="beautyPill">配置数 <span id="beautyCountText">0</span></span>
+            </div>
+          </div>
+          <div>
+            <div class="ext-card">
+              <h4>追加する</h4>
+              <div class="beautyNote">在庫を使ってトークンを追加し、ドラッグで位置を整えます。</div>
+              <div class="ext-actions">
+                <button class="ext-action" id="addNegiToken">🌿 ネギを置く</button>
+                <button class="ext-action" id="addChashuToken">🥩 チャーシューを置く</button>
+              </div>
+            </div>
+            <div class="ext-card" style="margin-top:12px">
+              <h4>判定</h4>
+              <div class="beautyNote" id="beautyJudge">まだ配置されていません。</div>
+              <div class="ext-actions"><button class="ext-action" id="closeBeautyExt">閉じる</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(beautyModal);
+
+  const getUI = (id)=>document.getElementById(id);
+  const refreshPrep = ()=>{
+    getUI('prepNegiRaw').textContent = window.__prep.negi;
+    getUI('prepChashuRaw').textContent = window.__prep.chashu;
+    getUI('prepNegiDone').textContent = Math.max(0, 6-window.__prep.negi);
+    getUI('prepChashuDone').textContent = Math.max(0, 6-window.__prep.chashu);
+    getUI('prepStockNegi').textContent = (stock && stock.negi != null) ? stock.negi : 0;
+    getUI('prepStockChashu').textContent = (stock && stock.chashu != null) ? stock.chashu : 0;
+    getUI('prepNegiBar').style.width = ((6-window.__prep.negi)/6*100).toFixed(1)+'%';
+    getUI('prepChashuBar').style.width = ((6-window.__prep.chashu)/6*100).toFixed(1)+'%';
+  };
+
+  function cutPrep(type, amount=1){
+    const now = performance.now();
+    if(now - window.__prep.lastHit < 90) return;
+    window.__prep.lastHit = now;
+    const key = type === 'negi' ? 'negi' : 'chashu';
+    if(window.__prep[key] <= 0){
+      toast(`${type === 'negi' ? 'ネギ' : 'チャーシュー'}原料がありません`, 1200);
+      return;
+    }
+    window.__prep[key]--;
+    if(typeof stock !== 'undefined') stock[key] = (stock[key] || 0) + 1;
+    if(window.__prep[key] === 0){
+      toast(`${type === 'negi' ? 'ネギ' : 'チャーシュー'}を仕込みました`, 1400);
+    } else {
+      toast('トントン…', 600);
+    }
+    refreshPrep();
+    updateUI();
+  }
+
+  function openPrepExt(){ refreshPrep(); prepModal.classList.add('show'); }
+  function closePrepExt(){ prepModal.classList.remove('show'); }
+  function openBeautyExt(){ refreshBeauty(); beautyModal.classList.add('show'); }
+  function closeBeautyExt(){ beautyModal.classList.remove('show'); }
+
+  function computeBeauty(){
+    const bowl = getUI('beautyBowl');
+    const rect = bowl.getBoundingClientRect();
+    const tokens = Array.from(getUI('beautyTokens').children);
+    if(tokens.length === 0){
+      window.__beautyBonus = 0;
+      getUI('beautyBonusText').textContent = '0';
+      getUI('beautyCountText').textContent = '0';
+      getUI('beautyJudge').textContent = 'まだ配置されていません。';
+      return;
+    }
+    const center = {x: rect.width/2, y: rect.height/2};
+    let score = 0;
+    for(const el of tokens){
+      const x = parseFloat(el.dataset.x || '0');
+      const y = parseFloat(el.dataset.y || '0');
+      const dx = x - center.x, dy = y - center.y;
+      const d = Math.hypot(dx, dy);
+      score += Math.max(0, 1 - d/100);
+    }
+    for(let i=0;i<tokens.length;i++){
+      for(let j=i+1;j<tokens.length;j++){
+        const a=tokens[i], b=tokens[j];
+        const dx = (parseFloat(a.dataset.x||'0') - parseFloat(b.dataset.x||'0'));
+        const dy = (parseFloat(a.dataset.y||'0') - parseFloat(b.dataset.y||'0'));
+        const d = Math.hypot(dx, dy);
+        if(d < 22) score -= 0.5;
+        else if(d < 34) score -= 0.2;
+      }
+    }
+    score = Math.max(0, Math.min(5, score));
+    window.__beautyBonus = score;
+    getUI('beautyBonusText').textContent = score.toFixed(1);
+    getUI('beautyCountText').textContent = String(tokens.length);
+    if(score >= 3.5) getUI('beautyJudge').textContent = 'とても綺麗な配置です。チップに加点されます。';
+    else if(score >= 2.0) getUI('beautyJudge').textContent = '良い配置です。少し中央寄せにするとさらに上がります。';
+    else getUI('beautyJudge').textContent = '少し散らばっています。重なりと端寄りを見直しましょう。';
+  }
+
+  function addBeautyToken(type){
+    if(typeof stock === 'undefined' || (stock[type] || 0) <= 0){
+      toast(`${type === 'negi' ? 'ネギ' : 'チャーシュー'}在庫が足りません`, 1200);
+      return;
+    }
+    stock[type]--;
+    updateUI();
+    const layer = getUI('beautyTokens');
+    const bowl = getUI('beautyBowl');
+    const rect = bowl.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = `beautyToken ${type}`;
+    const id = Math.random().toString(36).slice(2,9);
+    el.dataset.id = id;
+    el.dataset.type = type;
+    const startX = rect.width/2 + (Math.random()*60-30);
+    const startY = rect.height/2 + (Math.random()*40-20);
+    el.dataset.x = String(startX);
+    el.dataset.y = String(startY);
+    el.style.left = startX + 'px';
+    el.style.top = startY + 'px';
+    layer.appendChild(el);
+    computeBeauty();
+
+    let dragging = false;
+    let pointerId = null;
+    const onMove = (ev)=>{
+      if(!dragging) return;
+      const r = bowl.getBoundingClientRect();
+      const x = Math.max(16, Math.min(r.width-16, ev.clientX - r.left));
+      const y = Math.max(16, Math.min(r.height-16, ev.clientY - r.top));
+      el.dataset.x = String(x); el.dataset.y = String(y);
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+      computeBeauty();
+    };
+    const end = ()=>{
+      dragging = false;
+      el.classList.remove('dragging');
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      computeBeauty();
+    };
+    el.addEventListener('pointerdown', (ev)=>{
+      dragging = true;
+      pointerId = ev.pointerId;
+      el.classList.add('dragging');
+      el.setPointerCapture(pointerId);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+    }, {once:true});
+  }
+
+  function refreshBeauty(){
+    const layer = getUI('beautyTokens');
+    if(!layer) return;
+    computeBeauty();
+  }
+
+  // tie into actual tip calculation with a small additive bonus
+  if(typeof calcTip === 'function'){
+    const originalCalcTip = calcTip;
+    window.calcTip = function(c){
+      const base = originalCalcTip(c);
+      const beautyAdd = Math.max(0, Math.floor(window.__beautyBonus * 0.9));
+      return base + beautyAdd;
+    };
+  }
+
+  // patch doAction to avoid double-trigger storms
+  if(typeof doAction === 'function'){
+    const originalDoAction = doAction;
+    let lastAt = 0;
+    window.doAction = function(){
+      const now = performance.now();
+      if(now - lastAt < 140) return;
+      lastAt = now;
+      return originalDoAction.apply(this, arguments);
+    };
+  }
+
+  // auto soup maintenance
+  window.__autoSoupMaintain = function(){
+    if(typeof autoSoupEnabled==='undefined' || !autoSoupEnabled) return;
+    if(typeof shelfStock === 'undefined' || typeof stock === 'undefined') return;
+    const desired = 8;
+    if(stock.soup >= desired) return;
+    const need = desired - stock.soup;
+    const fromShelf = Math.min(need, shelfStock.soup || 0);
+    if(fromShelf > 0){
+      shelfStock.soup -= fromShelf;
+      stock.soup += fromShelf * (SHELF_TO_TABLE && SHELF_TO_TABLE.soup ? SHELF_TO_TABLE.soup : 10);
+      if(stock.soup > 12) stock.soup = 12;
+      updateUI();
+    }
+  };
+
+  // wire buttons
+  document.addEventListener('click', (ev)=>{
+    const prep = ev.target.closest('[data-prep-cut]');
+    if(prep){ cutPrep(prep.dataset.prepCut); return; }
+  });
+
+  getUI('openPrepExt').addEventListener('click', openPrepExt);
+  getUI('openBeautyExt').addEventListener('click', openBeautyExt);
+  getUI('closePrepExt').addEventListener('click', closePrepExt);
+  getUI('closeBeautyExt').addEventListener('click', closeBeautyExt);
+  getUI('addNegiToken').addEventListener('click', ()=>addBeautyToken('negi'));
+  getUI('addChashuToken').addEventListener('click', ()=>addBeautyToken('chashu'));
+
+  const autoTick = ()=>{
+    window.__autoSoupMaintain();
+    requestAnimationFrame(autoTick);
+  };
+  requestAnimationFrame(autoTick);
+
+  // keep modal keyboard friendly
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){ closePrepExt(); closeBeautyExt(); }
+    if(e.key.toLowerCase() === 'p') openPrepExt();
+    if(e.key.toLowerCase() === 't') openBeautyExt();
+  });
+})();
+
 </script>
 </body>
 </html>

@@ -11,23 +11,23 @@
 #ad-banner{
   position:fixed;
   top:0;left:0;width:100%;
-  z-index:2000;
-  background:#111;
+  z-index:9999;
+  background-color:#ffffff;
   display:flex;
   align-items:center;
   justify-content:center;
-  height:50px;
+  height:90px;
   overflow:hidden;
   pointer-events:auto;
 }
-#ad-banner a, #ad-banner img{display:block;max-height:50px;max-width:100%;object-fit:contain;}
+#ad-banner a, #ad-banner img{display:block;max-height:90px;object-fit:contain;}
 
 /* ── ゲーム本体（広告分だけ下にずらす） ── */
 #game-root{
   position:fixed;
-  top:50px;left:0;
+  top:90px;left:0;
   width:100%;
-  height:calc(100% - 50px);
+  height:calc(100% - 90px);
   overflow:hidden;
 }
 
@@ -219,12 +219,11 @@ body{background:#1a0a00;overflow:hidden;font-family:'Hiragino Kaku Gothic ProN',
 </head>
 <body>
 
-<!-- ══ 広告バナー（最上部・固定） ══ -->
+<!-- ══ 広告バナー（最上部・固定・最前面） ══ -->
 <div id="ad-banner">
-  <a href="https://a8.net" rel="nofollow">
-    <img border="0" width="728" height="90" alt="" src="https://a8.net">
-  </a>
-  <img border="0" width="1" height="1" src="https://a8.net" alt="">
+<a href="https://px.a8.net/svt/ejp?a8mat=4B5UWC+D3JBW2+2G98+6GZCH" rel="nofollow">
+<img border="0" width="728" height="90" alt="" src="https://www22.a8.net/svt/bgt?aid=260613804792&wid=001&eno=01&mid=s00000011438001087000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www15.a8.net/0.gif?a8mat=4B5UWC+D3JBW2+2G98+6GZCH" alt="">
 </div>
 
 <!-- ══ ゲーム本体ラッパー ══ -->
@@ -598,18 +597,15 @@ function getCustomerInterval(){
   return base * starBonus;
 }
 
-// ── 注文タイプ（シンプル版：ラーメン or チャーハンのみ） ──
+// ── 注文タイプ ──
 const ORDER_TYPES={
   RAMEN: {name:'ラーメン',  emoji:'🍜', isChahan:false},
   CHAHAN:{name:'極上チャーハン',emoji:'🍳',isChahan:true},
 };
 
-// ── 在庫（棚・調理台） ──
-// ★ バグ修正：整数で管理し、直接代入で補充する
+// ── 在庫 ──
 const shelfStock={men:0, negi:0, chashu:0, soup:0};
 const stock     ={men:0, negi:0, chashu:0, soup:0};
-
-// SHELF_TO_TABLE: 調理台チャージ量
 const SHELF_TO_TABLE={men:2, negi:3, chashu:3, soup:10};
 
 let deliveryBoxes=[];
@@ -1168,19 +1164,16 @@ function setHandItem(type){
 }
 
 // ================================================================
-// ★★★ 購入・アップグレード（バグ修正済み）★★★
-// 重要：buyItem は単純な直接代入のみ。ループ・再帰は一切使わない
+// 購入・アップグレード
 // ================================================================
 window.buyItem = function(key){
   const price = currentItemPrices[key];
   if(!price){ showToast('不明な商品'); return; }
   if(money < price){ showToast('💸 お金が足りません！'); return; }
 
-  // お金を減らす（直接代入）
   money = money - price;
   dayPurchaseCost = dayPurchaseCost + price;
 
-  // 段ボールをシーンに追加
   const boxMesh = makeCardboardBox(key);
   const offset  = deliveryBoxes.length;
   const bx = DELIVERY_POS.x + (offset % 3 - 1) * 0.58;
@@ -1191,17 +1184,11 @@ window.buyItem = function(key){
 
   const label = {men:'麺ケース', negi:'ネギ箱', chashu:'チャーシューパック', soup:'スープ缶'}[key] || key;
 
-  // UIを更新（直接 DOM 書き換え、updateUI()呼び出しは後で1回だけ）
   document.getElementById('modal-money').textContent = '$' + money;
 
-  // モーダルを閉じる
   closeOrderModal();
-
-  // トースト表示
   showDeliveryNotice('📦 ' + label + 'が届いた！配達エリアへ');
   showToast('✅ ' + label + 'を発注！（$' + price + '）', 2500);
-
-  // UI更新は最後に1回のみ
   updateUI();
 };
 
@@ -1503,7 +1490,6 @@ function spawnCustomer(){
   };
   customers.push(c);
 
-  // 高値怒り退店
   if(ramenPrice >= 36 && Math.random() < 0.5){
     c.angerTimer = setTimeout(()=>{
       if(c.state === 'waiting'){
@@ -1779,18 +1765,15 @@ function doAction(){
   actionCD = 280;
   const flat = new THREE.Vector3(playerPos.x, 0, playerPos.z);
 
-  // [A] 会計待ち（最優先）
   const checkoutC = customers.find(c => c.state === 'checkout');
   if(checkoutC){
     const ctD = flat.distanceTo(new THREE.Vector3(COUNTER_POS.x, 0, COUNTER_POS.z));
     if(ctD < 3.2){ openRegisterModal(checkoutC); return; }
   }
 
-  // [B] PC発注
   const pcD = flat.distanceTo(new THREE.Vector3(PC_POS.x, 0, PC_POS.z));
   if(pcD < 2.6){ openOrderModal(); return; }
 
-  // [C] 段ボールを持つ
   if(!carryingBox && !carryingRefill && cookStep === STEPS.IDLE && chahanStep === CHAHAN_STEPS.IDLE && handItem === 'empty'){
     const delivD = flat.distanceTo(new THREE.Vector3(DELIVERY_POS.x, 0, DELIVERY_POS.z));
     if(delivD < 3.0 && deliveryBoxes.length > 0){
@@ -1804,11 +1787,9 @@ function doAction(){
     }
   }
 
-  // [D] 棚へ収納
   const shelfD = flat.distanceTo(new THREE.Vector3(SHELF_POS.x, 0, SHELF_POS.z));
   if(carryingBox && shelfD < 2.5){
     const type = carryingBox.type;
-    // ★ バグ修正：直接加算のみ。ループ・再帰なし
     shelfStock[type] = shelfStock[type] + 1;
     carryingBox = null;
     setHandItem('empty');
@@ -1816,17 +1797,14 @@ function doAction(){
     updateUI(); return;
   }
 
-  // [E] 棚から補充食材を取り出す
   if(!carryingBox && !carryingRefill && cookStep === STEPS.IDLE && chahanStep === CHAHAN_STEPS.IDLE && handItem === 'empty'){
     if(shelfD < 2.5){
       const candidates = ['men','negi','chashu','soup'].filter(t => shelfStock[t] > 0);
       if(candidates.length === 0){ showToast('⚠️ 棚に在庫がありません！PCで発注してください', 2500); return; }
-      // 最もストックが少ない調理台の食材を優先
       let chosen = null, minStock = Infinity;
       candidates.forEach(t => { if(stock[t] < minStock){ minStock = stock[t]; chosen = t; } });
       if(!chosen) chosen = candidates[0];
       carryingRefill = {type: chosen};
-      // ★ 直接減算のみ
       shelfStock[chosen] = shelfStock[chosen] - 1;
       setHandItem('refill_' + chosen);
       showToast('🔄 ' + refillLabel(chosen) + '補充用を持った！調理台へ', 2500);
@@ -1834,13 +1812,11 @@ function doAction(){
     }
   }
 
-  // [F] 調理台に補充
   if(carryingRefill){
     const type      = carryingRefill.type;
     const targetPos = type==='men' ? NOODLE_SPACE : type==='soup' ? POT_SPACE : type==='chashu' ? CHASHU_SPACE : NEGI_SPACE;
     const d = flat.distanceTo(new THREE.Vector3(targetPos.x, 0, targetPos.z));
     if(d < 2.5){
-      // ★ バグ修正：直接加算のみ。ループなし
       stock[type] = stock[type] + SHELF_TO_TABLE[type];
       carryingRefill = null;
       setHandItem('empty');
@@ -1855,7 +1831,6 @@ function doAction(){
   const pd  = flat.distanceTo(new THREE.Vector3(POT_SPACE.x,     0, POT_SPACE.z));
   const ctD = flat.distanceTo(new THREE.Vector3(COUNTER_POS.x,   0, COUNTER_POS.z));
 
-  // チャーハン調理台
   if(chahanEnabled && chahataTaiPlaced){
     const chahataD = flat.distanceTo(new THREE.Vector3(CHAHATA_POS.x, 0, CHAHATA_POS.z));
     if(chahataD < 2.8){
@@ -1869,7 +1844,6 @@ function doAction(){
     }
   }
 
-  // チャーハン完成→カウンター提供
   if(chahanStep === CHAHAN_STEPS.COMPLETE && ctD < 2.8){
     const waitC = customers.find(c => c.state === 'waiting' && c.orderType.isChahan);
     if(waitC){
@@ -1896,18 +1870,15 @@ function doAction(){
     return;
   }
 
-  // ラーメンフロー（シンプル版：麺茹で→スープ→麺投入→提供）
   switch(cookStep){
     case STEPS.IDLE:
       if(nd < 2.4){
         if(stock.men <= 0){ showToast('⚠️ 麺の残り0！棚から補充してください', 2000); return; }
-        // ★ 直接減算
         stock.men = stock.men - 1;
         cookStep = STEPS.HAVE_RAW; setHandItem('raw_noodle');
         showToast('🍜 生麺を掴んだ！②鍋スペースへ');
         updateUI(); return;
       }
-      // 完成ラーメン→提供
       if(readyRamen > 0 && ctD < 2.8){
         const wc = customers.find(c => c.state === 'waiting' && !c.orderType.isChahan);
         if(wc){
@@ -1959,10 +1930,8 @@ function doAction(){
     case STEPS.HAVE_BOWL:
       if(pd < 2.4){
         if(stock.soup <= 0){ showToast('⚠️ スープ残り0！棚から補充してください', 2000); return; }
-        // ★ バグ修正：スープ直接減算のみ。ループ・再帰・setTimeout一切なし
         stock.soup = stock.soup - 1;
         if(autoSoupEnabled){
-          // 自動スープ：即座に麺投入ステップへ
           cookStep = STEPS.BOWL_NOODLE; setHandItem('bowl_noodle');
           showToast('🤖 自動スープ＋麺投入完了！カウンターへ', 2000);
         } else {
@@ -2139,7 +2108,6 @@ function updateSpeechBubbles(){
     sv.project(camera);
     if(sv.z > 1){ c.speechEl.style.display='none'; return; }
     c.speechEl.style.display  = 'block';
-    // game-root のオフセットを加味（広告バナー50px分）
     const rootTop = gameRoot.getBoundingClientRect().top;
     c.speechEl.style.left = (sv.x*.5+.5)*window.innerWidth + 'px';
     c.speechEl.style.top  = ((-sv.y*.5+.5)*gameRoot.clientHeight + rootTop) + 'px';
@@ -2170,7 +2138,6 @@ function animate(ts){
     spawnCustomer(); customerTimer=0; nextCustomerInterval=getCustomerInterval();
   }
 
-  // 茹で処理
   if(isBoiling && cookStep === STEPS.BOILING){
     boilTimer -= dt;
     const remaining = Math.max(0, Math.ceil(boilTimer));
@@ -2183,7 +2150,6 @@ function animate(ts){
     }
   }
 
-  // 移動
   const speed = 4.2;
   const fwd   = getCamFwd(), right = getCamRight();
   const move  = new THREE.Vector3(0, 0, 0);
@@ -2209,7 +2175,6 @@ function animate(ts){
     playerPos.z + Math.cos(yaw)*Math.cos(pitch)*10
   );
 
-  // 手持ちアイテム
   if(handMesh){
     const f=getCamFwd(), r=getCamRight();
     handMesh.position.set(
@@ -2223,7 +2188,6 @@ function animate(ts){
   updateTebboPosition(dt);
   updateBoilingVisuals(dt);
 
-  // 客移動
   customers.forEach(c=>{
     if(c.state === 'walking'){
       const dx=c.targetX-c.mesh.position.x, dz=c.targetZ-c.mesh.position.z;
@@ -2340,7 +2304,6 @@ loadGLTFLoaderScript(err=>{
   }, _=>oneDone());
   tryLoadModel(loader,'./floor.glb', gltf=>{placeFloorModel(gltf.scene);oneDone();}, _=>oneDone());
   tryLoadModel(loader,'./wall.glb',  gltf=>{
-    // 壁モデル（簡易配置）
     gltf.scene.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
     scene.add(gltf.scene); oneDone();
   }, _=>oneDone());
@@ -2350,3 +2313,4 @@ loadGLTFLoaderScript(err=>{
 </script>
 </body>
 </html>
+
